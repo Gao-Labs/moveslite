@@ -43,7 +43,7 @@ dat %>%
   geom_point()
 
 m = dat %>% lm(formula = emissions ~ poly(vmt,4) )
-
+  
 m %>% glance()
 # Beta coefficient which the rate of emissions per VMT
 
@@ -78,6 +78,10 @@ predict(m, tibble(vmt = 3))
 # C. Make some kind of checker - is this model good enough?
 #    C1. Make a comparer - compare observed to predicted emissions.
 # D. Make an example workflow that can actually run Yan's project needs.
+
+
+
+
 
 
 dbDisconnect(db); rm(list = ls())
