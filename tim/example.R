@@ -85,9 +85,15 @@ db = connect("data")
 # Get just the full list of counties
 .tables = db %>% dbListTables() %>% {.[nchar(.) == 6]} %>% stringr::str_remove("d")
 
+# Get filters
 .filters = c(.pollutant = 98, .by = 8, .sourcetype = 42)
+
+# Get data
+data = db %>% query(.table = "d36109", .filters = .filters)
+
 # Get a model
-m = estimate(.geoid = "36109", .filters = .filters)
+m = estimate(data = data, .check = FALSE)
+
 
 
 stat = .tables %>% 

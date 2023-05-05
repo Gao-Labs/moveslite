@@ -30,9 +30,6 @@ query = function(.db, .table, .filters = c(.by = 16, .pollutant = 98)){
   # Filter by aggregation level
   if(".by" %in%  v){ q = q %>% filter(by == !!f$.by) }
 
-  # Filter by year (less common)
-  if(".year" %in% v){ q = q %>% filter(year == !!f$.year) }
-    
   # Filter by sourcetype
   if(".sourcetype" %in% v){ q = q %>% filter(sourcetype == !!f$.sourcetype) }
   
