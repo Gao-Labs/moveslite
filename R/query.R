@@ -3,6 +3,7 @@
 #' @param .db database connection object for CAT GRAND database or CAT formatted MOVES output data
 #' @param .table Name of table in database object `.db`
 #' @param .filters Named Vector or List of inputted values for filtering.
+#' @param .vars Vector of variables desired
 #' @note .pollutant ID of the pollutant affected
 #' @note .by ID of Aggregation Level (overall = `16`, by sourcetype = `8`, by fueltype = `14`, by regulatory class = `12`)
 #' @note .sourcetype ID of Sourcetype
@@ -14,7 +15,10 @@
 #' @import DBI
 #' @export
 
-query = function(.db, .table, .filters = c(.by = 16, .pollutant = 98)){
+query = function(
+    .db, .table, 
+    .filters = c(.by = 16, .pollutant = 98),
+    .vars = c("year", "vmt", "vehicles", "starts", "sourcehours")){
   
   # Convert vector into a list object.  
   f = .filters %>% as.list()
@@ -41,6 +45,10 @@ query = function(.db, .table, .filters = c(.by = 16, .pollutant = 98)){
 
   # Filter by fueltype
   if(".fueltype" %in% v){ q = q %>% filter(fueltype == !!f$.fueltype) }
+  
+  
+  # Subset to just the variables needed
+  q = q %>% select(any_of(unique(c("geoid", "year", "emissions", .vars))))
   
   # Collect the data
   data = q %>% collect()

@@ -11,6 +11,11 @@
 
 estimate = function(data, .vars = c("vmt", "vehicles", "starts", "sourcehours", "year"), .check = FALSE){
 
+  ####################################
+  # EDITS NEEDED
+  ###################################
+  # -- Do a few versions of this model to account for different numbers of .vars
+  
   # Compute the model
   m = data %>% lm(formula = emissions ~ poly(vmt, 3) + vehicles + starts + sourcehours + year)
   

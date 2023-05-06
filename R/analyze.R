@@ -9,10 +9,18 @@ analyze = function(
     .setx = tibble(year = 2020, vmt = 1000)
     ){
   
+  # Example Inputs
+  # .geoid = "36109"
+  # .filters = c(.by = 16, .pollutant = 98)
+  # .vars = c("vmt", "vehicles", "starts", "sourcehours", "year")
+  # .setx = tibble(year = 2020, vmt = 1000)
+  
   # Load functions  
   source("R/connect.R")
   source("R/table_exists.R")
   source("R/query.R")
+  source("R/setx.R")
+  source("R/estimate.R")
   
   # Connect to data database
   db = connect("data")
@@ -32,30 +40,18 @@ analyze = function(
   m = estimate(data = data, .vars = .vars, .check = FALSE)
   
   
-  # For any supplied values, fill in the unsupplied values with defaults from data
-  xs = names(.setx)
+  stat = project(m, data, .newx = c(year = 2020, vmt = 2000),
+          .cats = "year", .outcome = "emissions", .exclude = "geoid")
   
-  # Compare prediction to default data as is
-  notxs = .vars[!.vars %in% xs]
-  
-  # Compare prediction to scenario II
-
-  # Filter default data to just the years supplied for comparison
-  default = data %>% 
-    filter(year %in% .setx$year) %>%
-    # For each year of default data, grab the variables not supplied
-    select(any_of(c("year", notxs)))
-  # Join in the new data
-  newdata = .setx %>% left_join(by = "year", y = default)
-  
-  # Get predictions
-  yhat = newdata %>% mutate(yhat = predict(m, .))
-  
-  
-  
+  # Calculate quantities of interest
+  qis = stat %>% 
+    summarize(
+      across(.cols = any_of(c("emissions", .vars)), 
+             .fns = ~.x[type == "default"] - .x[type == "custom"]))
   
   # Disconnect from database
   dbDisconnect(db); gc()
   
-  
+  list(stat, qis) %>%
+    return()
 }
