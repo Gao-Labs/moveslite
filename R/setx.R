@@ -7,12 +7,13 @@
 #' @description Function to create a data.frame of `newdata` to pass to a model, filling in the rest with default `data`.
 #' @importFrom dplyr %>% filter mutate across if_any if_all any_of all_of
 
-setx = function(data, .newx, .cats = "year", .outcome = "emissions", .exclude = c("geoid")){
+setx = function(data, .newx, .cats = "year", .outcome = "emissions", .exclude = c("geoid"), .forecast = TRUE){
 
   # Examples for testing:
-  # .newx = c(year = 2020, vmt = 200)
+  # .newx = c(year = 2021, vmt = 200)
   # .cats = "year"
   # .exclude = "geoid"
+  # .forecast = TRUE
   
   # If it's a vector, convert it to a list
   if(is.vector(.newx)){ .newx = as.list(.newx)}
@@ -34,9 +35,9 @@ setx = function(data, .newx, .cats = "year", .outcome = "emissions", .exclude = 
   # Get xvars your data.frame did NOT supply
   .otherxvars = .vars[!.vars %in% c(.xvars, .cats, .outcome) ]
   
+  
   # Make a default data.frame
   default = d 
-  
   
   # For each categorical variable shared, 
   # Check first, do I have default data already for those values?
@@ -45,34 +46,62 @@ setx = function(data, .newx, .cats = "year", .outcome = "emissions", .exclude = 
   # Were you actually able to get default data for those values?
   condition = nrow(check) > 0
   
+  
   # If default data for those provided values exists, just use that!
   if(condition == TRUE){
     default = check
-    }else{
+  }else{
     # Otherwise, interpolate the values of each missing predictor using the supplied data.
-      # Make a data.frame of custom data, which we'll fill in
-      default = .newx   
-      # For each variable NOT supplied, we're going to interpolate its value based on the year supplied  
-      for(i in c(.outcome, .xvars, .otherxvars) ){
-        # Create a linear interpolation function for the variable i, predicting it as best as possible 
-        f = data %>% select(outcome = all_of(i), year) %>% lm(formula = outcome ~ poly(., 3) )
-        default = default %>% mutate(!!sym(i) := predict(f, .))
-      }
-    }
+    # Make a data.frame of custom data, which we'll fill in
+    default = .newx 
+  }
+  
+  # If forecasting is desired...
+  if(.forecast == TRUE){
+    # Expand over time  
+    default = default %>% 
+      reframe(
+        year = seq(from = year, to = 2060, by = 1),
+        across(.cols = everything(), .fns= ~.x))
+    # Otherwise, just keep as is.
+  }else{ .newx_range = .newx }
+  
+  # For each variable NOT supplied, we're going to interpolate its value based on the year supplied  
+  for(i in c(.outcome, .xvars, .otherxvars) ){
+    # Create a linear interpolation function for the variable i, predicting it as best as possible 
+    f = data %>% select(outcome = all_of(i), year) %>% lm(formula = outcome ~ poly(year, 3) )
+    # Predict xvalues based on time trend
+    default = default %>% mutate(!!sym(i) := predict(f, .))
+  }
 
-  # Now, default will show the values projected for selected strata (year) by default.
-  # default
   
-  # Join in the new value
-  custom = default %>%
-    # Remove the default values for the .xvars you actually want to supply
-    select(-any_of(.xvars)) %>%
-    # Use categories' shared values to join in the new newx values 
-    left_join(by = .cats, y = .newx)
   
+  # Latest Year
+  latest = max(.newx$year)
+  diff = default %>% filter(year == latest)
+  # Compute the difference (new - default) 
+  for(i in .xvars){ diff = diff %>% mutate(!!sym(i) := filter(.newx, year == latest)[[i]] - !!sym(i)  ) }
+  
+  if(.forecast == TRUE){
+  diff = diff %>% 
+    reframe(year = seq(from = year, to = 2060, by = 1),
+            across(.cols = everything(), .fns= ~.x) )
+  }
+  
+  custom = default
+  for(i in c(.xvars)){
+    custom = custom %>% 
+      left_join(by = .cats, y = diff %>% select(any_of(.cats), change = i)) %>% 
+      mutate(!!sym(i) := !!sym(i) + change) %>%
+      select(-change)
+  }
+
+  
+  # How much different is the vmt in custom than in default?
+
   # Bind these together and label.
   output = bind_rows(default, custom, .id = "type") %>% 
-    mutate(type = type %>% dplyr::recode_factor("1" = "default", "2" = "custom"))
+    mutate(type = type %>% dplyr::recode_factor("1" = "benchmark", "2" = "custom"))
   
   return(output)
 }

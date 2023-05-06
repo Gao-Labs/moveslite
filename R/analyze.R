@@ -6,21 +6,29 @@ analyze = function(
     .geoid = "36109",
     .filters = c(.by = 16, .pollutant = 98), 
     .vars = c("vmt", "vehicles", "starts", "sourcehours", "year"),
-    .setx = tibble(year = 2020, vmt = 1000)
+    .newx = tibble(year = 2020, vmt = 1000),
+    .outcome = "emissions",
+    .cats = "year",
+    .exclude = "geoid"
     ){
   
   # Example Inputs
   # .geoid = "36109"
   # .filters = c(.by = 16, .pollutant = 98)
   # .vars = c("vmt", "vehicles", "starts", "sourcehours", "year")
-  # .setx = tibble(year = 2020, vmt = 1000)
-  
+  # .newx = tibble(year = 2020, vmt = 10000)
+  # .forecast = TRUE
+  # .outcome = 'emissions'
+  # .cats = "year"
+  # .exclude = "geoid"
+  # 
   # Load functions  
   source("R/connect.R")
   source("R/table_exists.R")
   source("R/query.R")
   source("R/setx.R")
   source("R/estimate.R")
+  source("R/project.R")
   
   # Connect to data database
   db = connect("data")
@@ -36,12 +44,17 @@ analyze = function(
   # Query the table with the supplied filters
   data = db %>% query(.table = .table, .filters = .filters)
   
+  
   # Estimate a model
   m = estimate(data = data, .vars = .vars, .check = FALSE)
   
   
-  stat = project(m, data, .newx = c(year = 2020, vmt = 2000),
-          .cats = "year", .outcome = "emissions", .exclude = "geoid")
+  stat = project(m, data, .newx = .newx,
+          .cats = .cats, .outcome = .outcome, .exclude = .exclude, .forecast = .forecast)
+  
+  stat %>% 
+    ggplot(mapping = aes(color = type, x = year, y = emissions)) +
+    geom_point()
   
   # Calculate quantities of interest
   qis = stat %>% 
