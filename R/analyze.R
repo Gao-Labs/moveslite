@@ -7,9 +7,8 @@ analyze = function(
     .filters = c(.by = 16, .pollutant = 98), 
     .vars = c("vmt", "vehicles", "starts", "sourcehours", "year"),
     .newx = tibble(year = 2020, vmt = 1000),
-    .outcome = "emissions",
-    .cats = "year",
-    .exclude = "geoid"
+    .cats = "year", .exclude = "geoid",
+    .context = TRUE
     ){
   
   # Example Inputs
@@ -44,27 +43,38 @@ analyze = function(
   # Query the table with the supplied filters
   data = db %>% query(.table = .table, .filters = .filters)
   
+  # Disconnect from database
+  dbDisconnect(db); gc()
   
   # Estimate a model
   m = estimate(data = data, .vars = .vars, .check = FALSE)
   
+  stat = project(m, data, .newx = .newx, .cats = .cats, .exclude = .exclude)
   
-  stat = project(m, data, .newx = .newx,
-          .cats = .cats, .outcome = .outcome, .exclude = .exclude, .forecast = .forecast)
+  #   
+  # ggplot() +
+  #   geom_line(
+  #     data = stat %>% filter(!type %in% "custom"),
+  #     mapping = aes(x = year, y= emissions,
+  #                   color = "benchmark")) +
+  #   geom_line(
+  #     data = stat %>% filter(type %in% c("pre_benchmark", "custom")),
+  #     mapping = aes(x = year, y = emissions,
+  #     color = "custom")) 
+    
+  .mainvars = .vars[!.vars %in% "year"]
   
-  stat %>% 
-    ggplot(mapping = aes(color = type, x = year, y = emissions)) +
-    geom_point()
-  
-  # Calculate quantities of interest
-  qis = stat %>% 
+  qi = stat %>% 
+    filter(type %in% c("benchmark", "custom")) %>%
+    # For each year, measure the change in variables
+    group_by(year) %>%
     summarize(
-      across(.cols = any_of(c("emissions", .vars)), 
-             .fns = ~.x[type == "default"] - .x[type == "custom"]))
+      across(
+        .cols = any_of(.mainvars), 
+        .fns = ~.x[type == "custom"] - .x[type == "benchmark"]), 
+      .groups = "drop")
   
-  # Disconnect from database
-  dbDisconnect(db); gc()
   
-  list(stat, qis) %>%
-    return()
+  output = list(stat = stat, qi = qi)
+  return(output)
 }

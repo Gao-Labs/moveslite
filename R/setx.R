@@ -7,20 +7,22 @@
 #' @description Function to create a data.frame of `newdata` to pass to a model, filling in the rest with default `data`.
 #' @importFrom dplyr %>% filter mutate across if_any if_all any_of all_of
 
-setx = function(data, .newx, .cats = "year", .outcome = "emissions", .exclude = c("geoid"), .forecast = TRUE){
+setx = function(data, .newx, .cats = "year", .exclude = c("geoid"), .context = TRUE){
 
   # Examples for testing:
-  # .newx = c(year = 2021, vmt = 200)
+  # .newx = c(year = 2021, vmt = 800000000 )
   # .cats = "year"
   # .exclude = "geoid"
-  # .forecast = TRUE
+  # .context = TRUE
+  
+  .outcome = "emissions"
   
   # If it's a vector, convert it to a list
   if(is.vector(.newx)){ .newx = as.list(.newx)}
   # If it's a list object, convert it to a data.frame
   if(is.list(.newx)){ .newx = dplyr::as_tibble(.newx)  }
   
-  # Exclude any variables
+  # Exclude any unneeded variables
   d = data %>% select(-any_of(.exclude))
   
   # Get variables included in your data query (other than .geoid)
@@ -37,71 +39,55 @@ setx = function(data, .newx, .cats = "year", .outcome = "emissions", .exclude = 
   
   
   # Make a default data.frame
-  default = d 
   
-  # For each categorical variable shared, 
-  # Check first, do I have default data already for those values?
-  check = default
-  for(i in .cats){ check = check %>% filter(!!sym(i) %in% .newx[[i]]) }
-  # Were you actually able to get default data for those values?
-  condition = nrow(check) > 0
+  # Use linear interpolation to jump between years
+  funs = list()
   
+  # Get all xvariables (except year)
+  .allxvars = c(.outcome, .xvars, .otherxvars)
   
-  # If default data for those provided values exists, just use that!
-  if(condition == TRUE){
-    default = check
-  }else{
-    # Otherwise, interpolate the values of each missing predictor using the supplied data.
-    # Make a data.frame of custom data, which we'll fill in
-    default = .newx 
+  # For each xvariable
+  for(i in  1:length(.allxvars) ){
+  # Generate an approximation function, which fills in the gaps between each x-y pair with linear interpolation.
+  funs[[.allxvars[i]  ]] <- d %>%
+    select(year, x = .allxvars[i]) %>% 
+    approxfun(method = "linear", na.rm = TRUE)
   }
   
-  # If forecasting is desired...
-  if(.forecast == TRUE){
-    # Expand over time  
-    default = default %>% 
-      reframe(
-        year = seq(from = year, to = 2060, by = 1),
-        across(.cols = everything(), .fns= ~.x))
-    # Otherwise, just keep as is.
-  }else{ .newx_range = .newx }
-  
-  # For each variable NOT supplied, we're going to interpolate its value based on the year supplied  
-  for(i in c(.outcome, .xvars, .otherxvars) ){
-    # Create a linear interpolation function for the variable i, predicting it as best as possible 
-    f = data %>% select(outcome = all_of(i), year) %>% lm(formula = outcome ~ poly(year, 3) )
-    # Predict xvalues based on time trend
-    default = default %>% mutate(!!sym(i) := predict(f, .))
-  }
-
-  
-  
-  # Latest Year
-  latest = max(.newx$year)
-  diff = default %>% filter(year == latest)
-  # Compute the difference (new - default) 
-  for(i in .xvars){ diff = diff %>% mutate(!!sym(i) := filter(.newx, year == latest)[[i]] - !!sym(i)  ) }
-  
-  if(.forecast == TRUE){
-  diff = diff %>% 
-    reframe(year = seq(from = year, to = 2060, by = 1),
-            across(.cols = everything(), .fns= ~.x) )
-  }
-  
+  # Estimate the x-variable values for that year using linear interpolation, and call these default.
+  default = .newx %>% 
+    mutate(
+      emissions = funs$emissions(year),
+      vmt = funs$vmt(year),
+      vehicles = funs$vehicles(year),
+      starts = funs$starts(year),
+      sourcehours = funs$sourcehours(year)
+    )
+  # For as many xvars are supplied, overwrite the xvar with the custom value
   custom = default
-  for(i in c(.xvars)){
-    custom = custom %>% 
-      left_join(by = .cats, y = diff %>% select(any_of(.cats), change = i)) %>% 
-      mutate(!!sym(i) := !!sym(i) + change) %>%
-      select(-change)
-  }
-
+  # Void the emissions column, since we don't actually know that.
+  custom$emissions = NA
+  for(i in .xvars){ custom[[i]] <- .newx[[i]] }
   
-  # How much different is the vmt in custom than in default?
-
-  # Bind these together and label.
-  output = bind_rows(default, custom, .id = "type") %>% 
-    mutate(type = type %>% dplyr::recode_factor("1" = "benchmark", "2" = "custom"))
+  # Bind and output
+  output = bind_rows(
+    default %>% mutate(type = "benchmark"),
+    custom %>% mutate(type = "custom")
+  )
+  
+  # If you want the full range of default information available, add it in to the output
+  if(.context == TRUE){
+    # Filter MOVES estimated data to only years that are not in custom year AND that are less than the min custom year
+    past = d %>% filter(!year %in% custom$year & year < min(custom$year) )
+    # Filter MOVES estimated data to just all future years AFTER The minimum custom year and NOT in the default year data
+    future = d %>% filter(year >= min(custom$year), !year %in% default$year )
+    
+    output = bind_rows(
+      output,
+      past %>% mutate(type = "pre_benchmark"),
+      future %>% mutate(type = "post_benchmark")
+    )     
+  }
   
   return(output)
 }
