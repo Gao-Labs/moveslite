@@ -61,20 +61,6 @@ analyze = function(
   #     data = stat %>% filter(type %in% c("pre_benchmark", "custom")),
   #     mapping = aes(x = year, y = emissions,
   #     color = "custom")) 
-    
-  .mainvars = .vars[!.vars %in% "year"]
   
-  qi = stat %>% 
-    filter(type %in% c("benchmark", "custom")) %>%
-    # For each year, measure the change in variables
-    group_by(year) %>%
-    summarize(
-      across(
-        .cols = any_of(.mainvars), 
-        .fns = ~.x[type == "custom"] - .x[type == "benchmark"]), 
-      .groups = "drop")
-  
-  
-  output = list(stat = stat, qi = qi)
-  return(output)
+  return(stat)
 }
