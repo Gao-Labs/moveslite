@@ -49,7 +49,7 @@ analyze = function(
   # Estimate a model
   m = estimate(data = data, .vars = .vars, .check = FALSE)
   
-  stat = project(m, data, .newx = .newx, .cats = .cats, .exclude = .exclude)
+  stat = project(m, data, .newx = .newx, .cats = .cats, .exclude = .exclude, .context = .context)
   
   #   
   # ggplot() +
