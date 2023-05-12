@@ -3,7 +3,7 @@
 #' @description Function to generate data.frames of projected emissions given
 #' @export
 
-project = function(m, data, .newx, .cats = "year", .exclude = "geoid", .forecast = TRUE){
+project = function(m, data, .newx, .cats = "year", .exclude = "geoid", .context = TRUE){
   # Example
   #.newx = tibble(year = 2020, vmt = 200)
   
@@ -11,8 +11,7 @@ project = function(m, data, .newx, .cats = "year", .exclude = "geoid", .forecast
   # .outcome = "emissions"
   # .context = TRUE
   # .cats = "year"
-  # .forecast = TRUE
-  
+
   
   source("R/setx.R")
   
@@ -20,7 +19,7 @@ project = function(m, data, .newx, .cats = "year", .exclude = "geoid", .forecast
   newdata = setx(data, .newx, .cats = .cats, .exclude = .exclude, .context = .context)
 
   # Add predictions for the custom data
-  custom = custom %>%
+  custom = newdata %>%
     # Filter just to the custom data
     filter(type == "custom") %>%
     # Get predictions
