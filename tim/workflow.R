@@ -22,11 +22,65 @@ source("R/project.R")    # generate predictions with project()
 # Connect to the 'data' database (tenatively your z/db.sqlite file)
 db = connect("data")
 
+
 db %>% dbListTables()
+
+# Total CAT Format is about n = 9000
+# by = 16 = Overall
+# by = 8 = Sourcetype
+# by = 12 = Regulatory Class
+# by = 14 = Fueltype
+# by = 15 = Roadtype
+
+db %>%
+  tbl("d36109") %>%
+  count()
+
+db %>%
+  tbl("d36109") %>%
+  select(by) %>%
+  distinct()
+
+
+db %>%
+  tbl("d36109") %>%
+  filter(by == 15 & pollutant == 98) %>%
+  filter(roadtype == 2) %>%
+  count()
+
+
+db %>%
+  tbl("d36109") %>%
+  filter(pollutant == 98 & by == 8 & sourcetype == 41) %>%
+  glimpse()
+
+dat = db %>%
+  tbl("d36109") %>%
+  filter(pollutant == 98 & by == 8 & sourcetype == 41) %>%
+  collect()
+
+dat %>%
+  lm(formula = emissions ~ vmt + year + vehicles + sourcehours + starts) %>%
+  glance()
+
+dat %>%
+  lm(formula = emissions ~ vmt * year + vehicles + sourcehours + starts) %>%
+  glance()
+
+dat %>%
+  lm(formula = emissions ~ poly(vmt, 3) + year + vehicles + sourcehours + starts) %>%
+  glance()
+
+
+dat %>%
+  lm(formula = emissions ~ poly(vmt, 3) * year + vehicles + sourcehours + starts) %>%
+  glance()
+
 
 # Here's the geoid for tompkins county, as a named vector
 .geoid = c("36109")
 .table = paste0("d", .geoid)
+
 # Here's the type of data we want, named for your convenience
 .pollutant = c( 98)
 .by = c( 16)
