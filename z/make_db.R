@@ -1,6 +1,6 @@
-# make_db.R
-
-# This code only works on Tim's computer
+#' @name make_db.R
+#' @description Summary of how the miniature database z/db.sqlite is made
+#' @note This code only works on Tim's computer
 
 library(DBI)
 library(RSQLite)
