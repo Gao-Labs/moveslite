@@ -11,10 +11,14 @@ getwd()
 
 db = dbConnect(RSQLite::SQLite(), "z/db.sqlite")
 
-con %>% 
-  tbl("d36109") %>%
-  collect()  %>%
-  dbWriteTable(conn = db, name = "d36109", value = ., overwrite = TRUE, append = FALSE)
+# Geoids for Tompkins County and Cortland County
+geoids = c("d36109", "d36023")
+for(i in geoids){
+  con %>%
+    tbl(i) %>%
+    collect()  %>%
+    dbWriteTable(conn = db, name = i, value = ., overwrite = TRUE, append = FALSE)
+}
 
 dbDisconnect(db)
 dbDisconnect(con)
