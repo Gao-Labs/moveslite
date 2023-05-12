@@ -2,6 +2,13 @@
 #'
 #' @description A demo of the intended workflow for a `moveslite` user.
 
+
+# - roxygen?
+# - devtools
+# - usethis
+# - function files
+
+
 library(dplyr)
 library(broom)
 
