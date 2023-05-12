@@ -6,7 +6,8 @@ library(htmltools)
 library(purrr)
 require(plotly)
 require(ggplot2)
-
+library(tidyr)
+library(scales)
 rm(list = ls()); gc()
 
 # Example inputs
@@ -35,7 +36,7 @@ mycss = "
 ui <- fluidPage(
   # Add head and styling
   tags$head( tags$style( mycss )),
-  titlePanel("Dynamic Input Sets"),
+  titlePanel("Calculator"),
   sidebarPanel(
     fluidRow(
       selectInput(inputId = "modeltype", label = "MODEL TYPE",choices = c("Simplest" = "simplest", "Best" = "best"), selected = "best", width = "100px"),
@@ -391,7 +392,6 @@ server <- function(input, output, session) {
     req(default(), default_yearly(), ydata())
     
     setcount = sets$count
-    
     if(setcount > 0){
       
       customdata = ydata() %>% filter(type == "custom") %>% arrange(year)
@@ -410,7 +410,8 @@ server <- function(input, output, session) {
   # RENDER INPUT VALUES ###############################
   output$input_values <- renderPrint({ 
     ydata() %>%
-      filter(type %in% c("benchmark", "custom"))
+      filter(type %in% c("benchmark", "custom")) %>%
+      glimpse()
     }) %>% bindEvent({ydata()})
   
   
@@ -418,21 +419,106 @@ server <- function(input, output, session) {
     
     req(ydata())
     
-    benchmark = ydata() %>% filter(type %in% c("benchmark","pre_benchmark") ) %>% mutate(type = "Benchmark")
-    custom = ydata() %>% filter(type == "custom")
+    .geoid_label = "Tompkins County"
+    .pollutant_label = "CO2 Equivalent"
+    .pollutant_unit = "tons"
+    .pollutant_unit_abbr = stringr::str_sub(.pollutant_unit, 1, 1)
+    .startyear = as.numeric(isolate({input$startyear}))
+    #.startyear = 2023
+    # Get the most recently supplied 5 year increment
+    .prioryear = .startyear %>% 
+      paste0(., "-01-01") %>% 
+      lubridate::date() %>% 
+      lubridate::floor_date(unit = "5 years") %>% 
+      lubridate::year()
+    .prioryear = if(.prioryear < 1990){ 1990 }else{ .prioryear }
     
+    bridge = ydata() %>% filter(type == "pre_benchmark" & year == .prioryear) %>% mutate(type = "custom")
+    
+    
+    .ydata = ydata() %>% 
+      filter(type %in% c("custom", "benchmark", "pre_benchmark", "post_benchmark")) %>%
+      # Join in the bridge year
+      bind_rows(bridge) %>%
+      # Mutate labels
+      mutate(type = case_when(type == "custom" ~ "custom",
+                              type != "custom" ~ "benchmark"),
+             label_type = factor(type, levels = c("benchmark", "custom"),
+                                 labels = c("Benchmark Scenario", "Your Scenario"))) %>%
+      mutate(label_emissions = scales::number(emissions, accuracy = 1, scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit)))) %>%
+      mutate(text = paste0(
+        "<b>Type</b>: ", label_type,
+        "<br>",
+        "<b>Year</b>: ", year,
+        "<br>",
+        "<b>Emissions</b>: ", label_emissions))
+    
+    benchmark = .ydata %>% filter(type == "benchmark")
+    custom = .ydata %>% filter(type == "custom")
+
+    # Get the bridge from the previous year
+    
+    
+    
+    # Example    
+    # tibble(type = c("benchmark", "custom"),
+    #        year = c(2022, 2022),
+    #        emissions = c(345, 263))%>%
+    #   select(type, year, emissions) %>% 
+    #   pivot_wider(id_cols = c(year), names_from = type, values_from = emissions) %>%
+    #   mutate(change = custom - benchmark)
+    # 
+    gaps = bind_rows(benchmark, custom) %>%
+      select(type, year, emissions) %>% 
+      pivot_wider(id_cols = c(year), names_from = type, values_from = emissions) %>%
+      # Compute Quantities
+      mutate(change = custom - benchmark,
+             percent = change / benchmark) %>%
+      rowwise() %>%
+      mutate(ymin = min(c(custom, benchmark), na.rm = TRUE),
+             ymax = max(c(custom, benchmark), na.rm = TRUE)) %>%
+      ungroup() %>%
+      # Generate Labels
+      mutate(label_custom = scales::number(custom, accuracy = 0, scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit))),
+             label_benchmark = scales::number(benchmark, accuracy = 0, scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit))),
+             label_change = scales::number(change, accuracy = 0, style_positive = "plus", style_negative = "minus", scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit))),
+             label_percent = scales::percent(percent, style_positive = "plus", style_negative = "minus", suffix = "%")
+             ) %>%
+      mutate(text = paste0(
+       "<b>Year</b>: ", year,
+       "<br>", 
+       "<b>Benchmark</b>:", label_benchmark,
+       "<br>",
+       "<b>Your Scenario</b>:", label_custom,
+       "<br>",
+       "<b>Change</b>:", label_change, " (", label_percent, ")"))
     
     gg = ggplot() +
-      geom_line(data = benchmark, 
-                mapping = aes(x = year, y = emissions, group = type, color = type)) +
-      geom_point(data = custom,
-                 mapping = aes(x = year, y= emissions, color = type), size = 1.25) +
-      geom_line(data = custom,
-                mapping = aes(x = year, y= emissions, group = type, color = type))+
-      geom_point(data = custom,
-                 mapping = aes(x = year, y= emissions, color = type), size = 1.25) 
-    
-    pp = ggplotly( gg )
+      geom_line(
+        data = benchmark, 
+        mapping = aes(x = year, y = emissions, group = type, color = type, text = text)) +
+      geom_point(
+        data = benchmark,
+        mapping = aes(x = year, y= emissions, color = type, text = text), size = 1.25) +
+      geom_line(
+        data = custom,
+        mapping = aes(x = year, y= emissions, group = type, color = type, text = text))+
+      geom_point(
+        data = custom,
+        mapping = aes(x = year, y= emissions, color = type, text = text), size = 1.25)  +
+      geom_linerange(
+        data = gaps,
+        mapping = aes(x = year, ymin = ymin, ymax = ymax, text = text)) +
+      
+      scale_color_manual(breaks = c("benchmark", "custom"),
+                         labels = c("Benchmark", "Your Scenario"),
+                         values = c("grey", "red")) +
+      scale_y_continuous(labels = scales::label_number(scale_cut = cut_si(.pollutant_unit_abbr))) +
+      labs(y = paste0("Estimated Emissions (", .pollutant_unit, " of ", .pollutant_label, ")"),
+           x = "Year",
+           title = paste0("Projected Emissions over Time in ", .pollutant_label))
+      
+    pp = ggplotly( gg, tooltip = "text")
     
     return(pp)
   })
