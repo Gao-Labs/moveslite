@@ -1,8 +1,18 @@
+library(dplyr)
 library(DBI)
+library(RSQLite)
 library(shiny)
 library(htmltools)
-library(dplyr)
 library(purrr)
+require(plotly)
+require(ggplot2)
+library(tidyr)
+library(scales)
+rm(list = ls()); gc()
+
+# Example inputs
+# input = list(geoid = "36109", by = 16, pollutant = 98, modeltype = "best", startyear = 2023)
+# sets = list()
 
 mycss = "
   .text-output-label {
@@ -26,402 +36,501 @@ mycss = "
 ui <- fluidPage(
   # Add head and styling
   tags$head( tags$style( mycss )),
-  titlePanel("Dynamic Input Sets"),
+  titlePanel("Calculator"),
   sidebarPanel(
-    # Database Parameter Inputs
     fluidRow(
-      selectInput(inputId = "modeltype", label = "MODEL TYPE", choices = c("Simplest", "Best"),  selected = "Best", width = "150px"),
-      selectInput(inputId = "geoid", label = "AREA", choices = c("Tompkins" = 36109, "Broome" = 36007), selected = 36109, width = "150px"),
-      selectInput(inputId = "pollutant", label = "POLLUTANT", choices = c("CO2e" = 98), selected = 98, width = "150px"),
-      selectInput(inputId = "by", label = "AGGREGATION", choices = c("Overall" = 16, "By Sourcetype" = 8, "By Regulatory Class" = 12), selected = 16, width = "150px")
-      #selectInput(inputId = "subtype", label = "SUBTYPE", choices = c("Overall" = 1), selected = 98, width = "150px")
-    ),
-    
+      selectInput(inputId = "modeltype", label = "MODEL TYPE",choices = c("Simplest" = "simplest", "Best" = "best"), selected = "best", width = "100px"),
+      selectInput(inputId = "geoid", label = "AREA", choices = c("Tompkins" = 36109), selected = 36109, width = "200px"),
+      selectInput(inputId = "pollutant", label = "POLLUTANT", choices = c("CO2e" = 98), selected = 98, width = "200px"),
+      selectInput(inputId = "by", label = "AGGREGATION", choices = c("Overall" = 16), selected = 16, width = "200px"),
+      selectInput(inputId = "startyear", label = "START YEAR", choices = 1990:2060, 
+                  selected = stringr::str_sub(Sys.Date(), 1,4), width = "200px")
+    )
   ),
   mainPanel(
     fluidRow(
-      # Placeholder for inputboxes
-      div(id = "input_boxes"),
-      actionButton("add_set", "Add Input Set")
+      div(id = "inputsets"),
+      actionButton("add_set", "Add Input Set"),
+      actionButton("remove_set", "Remove Input Set")
     ),
-    # View the Data
     fluidRow(
-      verbatimTextOutput("dataview", placeholder = TRUE)
+      verbatimTextOutput("input_values"),
+      plotlyOutput("visual")
     )
+    
   )
 )
-
-
-server = function(input, output, session){
-  
-  # DOWNLOAD FROM DATABASE ##################################
-  default = reactive({
-    # Requires all before proceeding
-    req(input$modeltype, input$geoid, input$pollutant, input$by)
-
-    # Set the values
-    .geoid = input$geoid
-    .by = input$by
-    .pollutant = input$pollutant
-    .vars = switch(
-      EXPR = input$modeltype,
-      "Simplest" = c("year", "vmt"),
-      "Best" = c("year", "vmt", "vehicles", "sourcehours", "starts"))    
-    
-    # Load functions  
-    source("R/connect.R")
-    source("R/table_exists.R")
-    source("R/query.R")
-    
-    # Connect to data database
-    db = connect(.type = "data")
-    db %>% dbListTables()
-    # Construct table
-    .table = paste0("d", .geoid)
-    # Example
-    # .filters = c(.by = 16, .pollutant = 98)
-    .filters = c(.by = .by, .pollutant = .pollutant)
-    
-    # Otherwise, continue
-    # Query the table with the supplied filters
-    data = db %>% query(.table = .table, .filters = .filters, .vars = .vars)
-    
-    # Disconnect from database
-    dbDisconnect(db); gc()
-    # Return the data!
-    return(data)
-    
-  }) %>% bindEvent({input$geoid; input$pollutant; input$by; input$modeltype})
-  
-  # Let's write a ui function to generate an input set
-  ui_generate_set <- function(.year = "", .default){
-    
-    # Grab the next 5 year period
-    #if(.year == ""){ .year = Sys.Date() %>% lubridate::round_date(., unit = "5 years") %>% lubridate::year() }
-    
-    
-    
-    # Get variable names from default data
-    .vars = .default %>% select(-any_of(c("geoid", "emissions"))) %>% names()
-    
-    
-    label_data = tribble(
-      ~var, ~label,
-      "year", "Year",
-      "vmt", "VMT",
-      "vehicles", "Vehicles",
-      "sourcehours", "Time Driven",
-      "starts", "Vehicle Starts",
-      "remove_set", "Remove Input",
-      "emissions", "Emissions",
-      "change", "Change"
-    )
-    
-    # Get namespace
-    ns <- NS(paste0("set", "-", .year))
-    # Get a remove button
-    bundle_button = label_data %>%
-      filter(var == "remove_set") %>%
-      split(.$var) %>%
-      map(~column(
-        actionButton(inputId = ns(.$var), label = .$label, icon = icon("minus"), width = "100px"),
-        width = 3, offset = 0) )
-    
-    # Get inputs
-    bundle_inputs = label_data %>% 
-      filter(var %in% .vars) %>% 
-      split(.$var) %>%
-      map(~column(
-        textInput(
-          inputId = ns(.$var), label = .$label, width = "100px",
-          # Get the value for that variable at the selected year
-          value = .default[ which(.default$year == .year), ][[.$var]]), 
-        width = 3, offset = 0))
-    
-
-    # Get outputs
-    bundle_outputs = label_data %>%
-      filter(var %in% c("emissions", "change")) %>%
-      split(.$var) %>%
-      map(~column(
-        fluidRow(
-          tags$b(.x$label, class = "text-output-label"),
-          div(class = "text-output",textOutput(outputId = ns(.x$var)) )
-        ),
-        width = 3, offset = 0) )
-    
-    # Append these items into one list....
-    bundle = append(bundle_inputs, bundle_outputs)
-    bundle = append(bundle_button, bundle)
-    # And make them items in the same row.
-    fluidRow(bundle)
-  }
-  
-
-  
-  # ESTIMATE MODEL ##########################################
-  model = reactive({
-    # Require both before proceeding
-    req(default(), vars())
-    # Load function
-    source("R/setx.R")
-    source("R/estimate.R")
-    # Get variables from default data
-    .vars = default() %>% select(-geoid, -emissions) %>% names()
-    # Estimate a model
-    estimate(data = default(), .vars = .vars, .check = FALSE)
-  }) %>% 
-    # Trigger when default data from database changes
-    bindEvent({default()})
-  
-  # MAKE PREDICTIONS #########################################
-  stat = reactive({    
-    source("R/project.R")
-    project(m = model(), data = default(), 
-            .newx = xdata(), 
-            .cats = "year", .exclude = "geoid", .context = TRUE)
-  }) %>% bindEvent({ model(); xdata() })
- 
-  
-  # Update this whenever default data changes
-  xdata = reactive({ tibble(year = 2020, vmt = rnorm(1, mean = 10000)) }) %>% 
-    bindEvent({ default() })
-  
-  
-  # Track how many sets of input boxes have been added
-  sets = reactiveValues(
-    count = 0,
-    # Start at current year
-    year = lubridate::year(lubridate::round_date(Sys.Date(), unit = "year")))
-  
-  # ADD 1 SET OF BOXES #################
-  observe({
-    req(default())
-    # Increase count
-    sets$count = sets$count + 1
-    # Insert new set
-    insertUI(
-      selector = "#input_boxes",
-      where = "afterEnd",
-      ui = ui_generate_set(.year = sets$year + sets$count, .default = default())
-    )
-  }) %>% bindEvent({input$add_set})
-  
-  
-  # Get names of inputs which match remove button
-  # Reactively find me all input names that start with outcome titles
-  remove_button_names = reactive({  input_nm = names(input); input_nm[grep("^remove_set", input_nm)] })
-  
-  
-  # TEST VIEW OUTPUT DATA ###################################
-  output$dataview = renderPrint({ inputState() })
-  
-  
-}
-
-#rm(list = ls())
-#.default = tibble(year = c(2020, 2021, 2023), vmt = c(30, 31, 32))
-#ui_generate_set(.year = 2022, .default)
-
-
-# GOAL:
-# 1. WHENEVER 1 OUT OF N BUTTONS ARE PRESSED, FIND THE ID OF THAT BUTTON.
-# 2. THEN, REMOVE THE SET THAT CONTAINS THAT BUTTON.
-
-
-shinyApp(ui, server)
-
-
-observe({
-  
-  if(sets$count > 1){      
-    
-    ns <- NS(paste0("set", .year, "_"))
-    
-    # 
-    removeUI(
-      selector = paste0("#year", n$num_sets, "-label"),
-      multiple = TRUE
-    )
-    removeUI(
-      selector = paste0("..."),
-      multiple = TRUE
-    )
-    # Then reduce the number of sets remaining by 1
-    sets$count = sets$count - 1      
-  }
-  
-}) %>%
-  # Trigger when any of these remove buttons are triggered
-  bindEvent(input, remove_button_names())
-
 
 
 
 
 server <- function(input, output, session) {
   
-  # Initialize reactiveValues object to store input sets
-  input_sets <- reactiveValues()
-  input_sets$count <- 0
-  
-  # Get a reactive values holder 'v'
-  v = reactiveValues()
-  
-  # criteria
-  # input$geoid = "36109"
-  # input$pollutant = 98
-  # input$by = 16
- 
+  # Load functions  
+  source("R/connect.R")
+  source("R/query.R")
+  source("R/setx.R")
+  source("R/estimate.R")
+  source("R/project.R")
   
   
-  # Add another input set ui to the input_sets reactive list object.
-  observe({
-    input_sets$count <- input_sets$count + 1
-    setcount <- input_sets$count
-    # As long as there is more than 0 sets....
-    # Fill in the values using xdata()???
-    bundle_inputs = ui_set_input(setcount = setcount)
-    bundle_outputs = ui_set_output(setcount = setcount)
+  #' @name ui_set()
+  #' @description Function to generate a set of text inputs and output boxes
+  #' @param setcount index number of the set to be produced
+  #' @param data data.frame of default annual interpolated data points to be entered as default inputs.
+  # Let's write a ui function to generate an input set
+  ui_set <- function(setcount, data){
     
-    input_sets[[paste0("set", setcount)]] = append(bundle_inputs, bundle_outputs) %>% fluidRow()
+    # Get namespace
+    ns <- NS(paste0("set", "_", setcount))
     
-  }) %>% 
-    # Trigger whenever "add_set" button is pressed
-    bindEvent({input$add_set})
-  
-  
-  # Reactively find me all input names that start with outcome titles
-  input_names = reactive({  
-    input_nm = names(input); 
-    input_nm[grep("^year|^vmt|^vehicles|^sourcehours|^starts", input_nm)] 
-  })
-
+    # Get the year of that setcount
+    .year = data$year[setcount]
+    
+    # Get default data pertaining to that year
+    .data = data %>% filter(year == .year)
+    
+    # Get available predictor variable names
+    .vars = .data %>% select(-any_of(c("emissions", "geoid"))) %>% names()
+    # .vars = c("year", "vmt", "vehicles", "sourcehours", "starts")
+    
+    # Get labels
+    labeldata = tribble(
+      ~var, ~label,
+      "year", "Year",
+      "vmt", "VMT",
+      "vehicles", "Vehicles",
+      "sourcehours", "Time Driven",
+      "starts", "Vehicle Starts",
+      "emissions", "Emissions",
+      "change", "Change"
+    ) %>%
+      mutate(var = factor(var, levels = var))
+    
+    # Make an input text box for each predictor varaible available
+    bundle_inputs = labeldata %>%
+      filter(var %in% .vars) %>%
+      split(.$var, drop = TRUE) %>%
+      map(~column(textInput(inputId = ns(.$var), label = .$label, value = .data[[.$var]], width = "100px"), 
+                  width = 2, offset = 0)) 
+    
+    
+    .outcomes = c("emissions", "change")
+    
+    # Make an output textbox for each outcome metric
+    bundle_outputs = labeldata %>%
+      filter(var %in% .outcomes) %>%
+      split(.$var, drop = TRUE) %>%
+      map(~column(
+        fluidRow(
+          tags$b(.x$label, class = "text-output-label"),
+          div(class = "text-output",textOutput(outputId = ns(.x$var)) )
+        ),
+        width = 2, offset = 0) ) 
+    
+    # Combine them
+    result = append(bundle_inputs, bundle_outputs) %>% fluidRow(id = ns("inputset"))
+    
+    return(result)
+  }
   
   
   #' @name present()
   #' @description Present supplied values as a data.frame
   #' @param i (Integer) Index of a given input set i (eg. set 1, 2, 3, 4)
-  present = function(i, vars = c("year", "vmt", "vehicles", 'sourcehours', "starts")){
-    # Get namespace of input set
-    ns <- NS(paste0("set", i, "_"))
-    # For as many variables as desired...
-    # Extract columns of these variables
-    vars %>% 
-      # Bundle each into a tibble with proper names
-      map(.f = ~{ tibble( input[[ ns(.x) ]]) %>% set_names(., nm = .x) }) %>% 
-      # Keep just valid, non-empty data.frames
-      keep(~nrow(.) > 0) %>%
-      # And bind the columns together!
-      bind_cols()
-  }
+  # present = function(i, vars = c("year", "vmt", "vehicles", 'sourcehours', "starts")){
+  #   # Get namespace of input set
+  #   ns <- NS(paste0("set", "_", i))
+  #   # For as many variables as desired...
+  #   # Extract columns of these variables
+  #   vars %>% 
+  #     # Bundle each into a tibble with proper names
+  #     map(.f = ~{ tibble( input[[ ns(.x) ]] %>% as.numeric() ) %>% set_names(., nm = .x) }) %>% 
+  #     # Keep just valid, non-empty data.frames
+  #     keep(~nrow(.) > 0) %>%
+  #     # And bind the columns together!
+  #     bind_cols()
+  # }
+  
+  # Initialize reactiveValues object to store input sets
+  sets <- reactiveValues()
+  sets$count <- 0
+  
+  # Get the range of years from selected start year (PRESENT) to the end of time
+  observe({ sets$years = input$startyear:2060 }) %>% bindEvent({input$startyear})
+  
+  # Get a reactive values holder 'v'
+  v = reactiveValues()
+  
+  
+  # DOWNLOAD FROM DB ###################################
+  download = reactive({
+    # Requires all before proceeding
+    req(input$geoid, input$pollutant)
+    # Set values
+    .geoid = input$geoid
+    .pollutant = input$pollutant
+    # Load functions  
+    # source("R/connect.R")
+    # source("R/query.R")
+    # Connect to data database
+    db = connect("data")
+    # Construct table
+    .table = paste0("d", .geoid)
+    # Query the table with the supplied filters
+    download = query(
+      .db = db, .table = .table, 
+      .filters = c(.pollutant = .pollutant), 
+      .vars = c("by", "year", "vmt", "vehicles", "starts", "sourcehours"))
+    # Disconnect from database
+    dbDisconnect(db); gc()
+    # Return the data!
+    print("---download()"); return(download)
+  }) %>% bindCache(input$geoid, input$pollutant) %>% bindEvent({input$geoid; input$pollutant})
+  
+  # DEFAULT DATA #######################################
+  default = reactive({
+    # Require these before proceeding
+    req(download(), input$modeltype, input$by)
+    # Select just those variables from download()
+    result = download() %>% 
+      # Filter to that aggregation level
+      filter(by == input$by)
+    
+    
+    # Get variables of interest depending on input$modeltype
+    .vars = switch(EXPR = input$modeltype, "simplest" = c("year", "vmt"), "best" = c("year", "vmt", "vehicles", "sourcehours", "starts"))
+    
+    default = result %>% 
+      # Grab just variables; don't need geoid, pollutant, or by anymore
+      select(emissions, any_of(.vars))
+    
+    # Return and print completion message
+    print("---default"); return(default)
+  }) %>%
+    bindCache(input$geoid, input$pollutant, input$by, input$modeltype) %>%
+    # Trigger whenver download changes OR input$modeltype
+    bindEvent({download(); input$modeltype; input$by})
+  
+  
+  # DEFAULT YEARLY INTERPOLATED DATA #######################################
+  default_yearly = reactive({
+    # Require these variables before proceeding
+    req(default(), sets$years )
+    # Load functions
+    # source("R/setx.R")
+    # Estimate for me each year-by-year, plus the previous years
+    default_yearly = setx(
+      data = default(), 
+      # Supply JUST a set of custom years 
+      .newx = tibble(year = sets$years ), 
+      .cats = "year", .context = FALSE) %>% 
+      # Drop the custom field - we don't need it yet
+      filter(type == "benchmark") %>% select(-type)
+    
+    # Return the output
+    print("---default_yearly()"); return(default_yearly)
+  }) %>%
+    bindCache(input$geoid, input$pollutant, input$by, input$modeltype, input$startyear) %>%
+    # Trigger whenver download changes OR input$modeltype
+    bindEvent({default(); sets$years })
+  
+  
+  
+  
+  # ADD INPUT SET #####################################
+  observe({
+    # Require both before proceeding
+    req(default_yearly(), input$add_set)
+    # Update the counter
+    sets$count <- sets$count + 1
+    setcount <- sets$count
+    # As long as there is more than 0 sets....
+    # Fill in the values using default data
+    #sets[[paste0("set", setcount)]] = 
+    insertUI(
+      selector = "#inputsets", 
+      where = "beforeBegin", 
+      ui = ui_set(setcount = setcount, data = default_yearly()) )
+  }) %>% bindEvent({input$add_set })
+  
+  
+  # REMOVE INPUT SETS ################################
+  observe({
+    # If there is at least 1 input set active...
+    if (sets$count > 0) {
+      # Get the number of input sets
+      setcount <- sets$count
+      # Get the namespace
+      ns <- NS(paste0("set", "_", setcount))
+      # Remove the input set
+      removeUI(selector = paste0("#", ns("inputset")), multiple = TRUE)
+      # Subtract 1 from the number of input sets
+      sets$count <- sets$count - 1
+    }
+  }) %>% bindEvent({input$remove_set})
+  
+  
+  # MODEL ###############################
+  # Estimate the model based on default data (NOT default interpolated yearly data)
+  model = reactive({
+    # Requires value default data before proceeding
+    req(default())
+    # source("R/estimate.R")
+    # Using these predictor variables
+    .vars = default() %>% select(-any_of(c("geoid", "emissions"))) %>% names()
+    # Estimate this model
+    model = estimate(data = default(), .vars = .vars, .check = FALSE)
+    # Return and Print Message
+    print("---model"); return(model)
+  }) %>% 
+    bindCache(input$geoid, input$pollutant, input$by, input$modeltype) %>%
+    bindEvent({default()})
+  
+  
+  # # Reactively find me all input names that start with outcome titles
+  # input_names = reactive({
+  #   input_nm = names(input);
+  #   input_nm[grep("^year|^vmt|^vehicles|^sourcehours|^starts", input_nm)]
+  # })
+  
   
   # Update these outputs every time that a value changes...
-  xdata = reactive({
+  ydata = reactive({
+    # Examples
+    # sets = list(count = 1)
+    # input = list("set_1-year" = "20233", "set_1-vmt" = "20224")
+    # Only proceed after default_yearly() has been calculated
+    req( default(), default_yearly(), model())
+    
     # Get the number of input sets
-    setcount = input_sets$count
+    setcount = sets$count
     # For these variables of interest
     vars = c("year", "vmt", "vehicles", 'sourcehours', "starts")
     
     # Given at least 1 set of inputs...
     if(setcount > 0){
-      # For each set...
-      data = 1:setcount %>%
-        # Get xvar data
-        map_dfr(~present(., vars = vars))
-      return(data)
       
-    }
-    # Run movesai, tentatively represented as this:
-  }) %>%
-    # Whenever one of these inputs changes...
-    bindEvent(input, input_names())
-  
-  # Update ydata whenever xdata changes
-  ydata = reactive({
-    # Placeholder movesai function
-    movesai = function(data){ 
-      if(nrow(data)>0){ 
-        data %>% 
-          mutate(emissions = round(rnorm(1:n()),2), 
-                 change = round(rnorm(1:n()),2))
-        }else{ data } }
-    # Run MOVESAI
-    xdata() %>% movesai()
-  }) %>% bindEvent(xdata())
-  
-
-  # Whenever ydata changes, update values of textOutput boxes
-  observe({
-    # Get the number of input sets
-    setcount <- input_sets$count
-    # Given at least 1 set of inputs...
-    if(setcount > 0){
-      # For each set of inputs
-      1:setcount %>%
-        # Run this function...
-        map(~{
-          # Get the namespace of the set...
-          ns <- NS(paste0("set", .x, "_"))
+      # Don't continue until at least the first has shown up
+      ns <- NS(paste0("set", "_", 1))
+      req(input[[ ns("year") ]])
+      
+      # For each set...
+      xdata = 1:setcount %>%
+        # Get xvar data
+        map_dfr(.f = ~{
           
-          # Get the ith value of the emission vector and change vector in ydata()
-          # Render this textoutput
-          output[[ ns("emissions") ]] <- renderText({ ydata()$emissions[.x] })
-          output[[ ns("change") ]] <- renderText({ ydata()$change[.x] })
-        })
+          # For these variables of interest
+          vars = c("year", "vmt", "vehicles", 'sourcehours', "starts")
+          
+          # Get namespace of input set
+          ns <- NS(paste0("set", "_", .x))
+          
+          
+          # For as many variables as desired...
+          # Extract columns of these variables
+          vars %>%
+            # Bundle each into a tibble with proper names
+            map(.f = ~{ tibble( input[[ ns(.x) ]] %>% as.numeric() ) %>% set_names(., nm = .x) }) %>%
+            # Keep just valid, non-empty data.frames
+            keep(~nrow(.) > 0) %>%
+            # And bind the columns together!
+            bind_cols()  })
+      
+      
+      # Generate statistics
+      ydata = project(
+        m = model(), data = default(), .newx = xdata,
+        .cats = "year", .exclude = "geoid", .context = TRUE)
+      
+      # Calculate change in emissions from default      
+      ydata = ydata %>%
+        left_join(
+          by = "year", 
+          y = default_yearly() %>% select(year, default = emissions)) %>%
+        mutate(change = emissions - default)
+      
+      # Whenever xdata() changes, update the predictions
+      print("---stat()"); return(ydata)
     }
-  }) %>% bindEvent({ydata()})
-    
-
-  # # Let's write a reactive function that captures the data any time a cell changes.
-  # data = reactive({
-  #   # Whenever one of these input values change, record it.
-  #   require(dplyr)
-  #   require(purrr)
+  })
+  
+  # 
+  # # Get the names of TextOutputs containing "emissions"
+  # outputboxes = reactive({ 
+  #   list(
+  #     emissions = names(output)[grepl("emissions", names(output), ignore.case = TRUE)],
+  #     changes = names(output)[grepl("changes", names(output), ignore.case = TRUE)] 
+  #   )
+  # })
+  # 
+  # observe({
+  #   req(default(), default_yearly(), ydata(), outputboxes())
   #   
-  #   # For each input set
-  #   data = 1:input_sets$count %>% 
-  #     # Present the values as a data.frame
-  #     map_dfr(~present(., vars = c("year", "vmt", "vehicles", "sourcehours", "starts")))
+  #   setcount = sets$count
   #   
-  #   return(data)
-  # }) 
+  #   customdata = ydata() %>% filter(type == "custom") %>% arrange(year)
+  #   
+  #   # For each item...
+  #   for(i in 1:length(outputboxes()$emissions) ){
+  #     output[[ outputboxes()$emissions[i] ]] = renderText({ customdata$emissions[i] })
+  #     print(outputboxes()$emissions[i])
+  #   }
+  #   
+  #   for(i in 1:length(outputboxes()$changes) ){
+  #     output[[ outputboxes()$changes[i] ]] = renderText({ customdata$changes[i] })
+  #     print(outputboxes()$changes[i])
+  #   }
+  #   
+  #   print("---outputboxes")
+  # }) %>% bindEvent({ydata()})
   
   
-  # Remove input set from input_sets reactive list object.
+  #%>% bindEvent({outputboxes()$emissions})
+  
   observe({
-    # If there is at least 1 input set active...
-    if(input_sets$count > 0) {
-      # Get the number of input sets
-      setcount <- input_sets$count
-      # Remove that input set
-      input_sets[[paste0("set", setcount)]] <- NULL
-      # Subtract 1 from the number of input sets, and record it.
-      input_sets$count <- input_sets$count - 1
-    }
-  }) %>% 
-    # Trigger whenever "remove_set" button is pressed
-    bindEvent({input$remove_set})
-  
-  
-  # RENDER INPUT SETS ################################
-  output$sets <- renderUI({
+    req(default(), default_yearly(), ydata())
     
-    # For each input set
-    1:input_sets$count %>% 
-      # Grab that input set
-      map(~input_sets[[paste0("set", .) ]] ) %>%
-      # put them all together in one div()
-      tags$div(id = "input_sets", .)
+    setcount = sets$count
+    if(setcount > 0){
+      
+      customdata = ydata() %>% filter(type == "custom") %>% arrange(year)
+      
+      for (k in 1:setcount) {
+        ns <- NS(paste0("set", "_", k))        
+        ek = reactive({ customdata$emissions[k] })
+        ec = reactive({ customdata$change[k] })
+        output[[ns("emissions")]] <<- renderText({ ek() })
+        output[[ns("change")]] <<- renderText({ ec() })
+        remove(ns)
+      }
+    }
+  }) %>% bindEvent({ ydata()  })
+  
+  # RENDER INPUT VALUES ###############################
+  output$input_values <- renderPrint({ 
+    ydata() %>%
+      filter(type %in% c("benchmark", "custom")) %>%
+      glimpse()
+    }) %>% bindEvent({ydata()})
+  
+  
+  output$visual = renderPlotly({
+    
+    req(ydata())
+    
+    .geoid_label = "Tompkins County"
+    .pollutant_label = "CO2 Equivalent"
+    .pollutant_unit = "tons"
+    .pollutant_unit_abbr = stringr::str_sub(.pollutant_unit, 1, 1)
+    .startyear = as.numeric(isolate({input$startyear}))
+    #.startyear = 2023
+    # Get the most recently supplied 5 year increment
+    .prioryear = .startyear %>% 
+      paste0(., "-01-01") %>% 
+      lubridate::date() %>% 
+      lubridate::floor_date(unit = "5 years") %>% 
+      lubridate::year()
+    .prioryear = if(.prioryear < 1990){ 1990 }else{ .prioryear }
+    
+    bridge = ydata() %>% filter(type == "pre_benchmark" & year == .prioryear) %>% mutate(type = "custom")
+    
+    
+    .ydata = ydata() %>% 
+      filter(type %in% c("custom", "benchmark", "pre_benchmark", "post_benchmark")) %>%
+      # Join in the bridge year
+      bind_rows(bridge) %>%
+      # Mutate labels
+      mutate(type = case_when(type == "custom" ~ "custom",
+                              type != "custom" ~ "benchmark"),
+             label_type = factor(type, levels = c("benchmark", "custom"),
+                                 labels = c("Benchmark Scenario", "Your Scenario"))) %>%
+      mutate(label_emissions = scales::number(emissions, accuracy = 1, scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit)))) %>%
+      mutate(text = paste0(
+        "<b>Type</b>: ", label_type,
+        "<br>",
+        "<b>Year</b>: ", year,
+        "<br>",
+        "<b>Emissions</b>: ", label_emissions))
+    
+    benchmark = .ydata %>% filter(type == "benchmark")
+    custom = .ydata %>% filter(type == "custom")
+
+    # Get the bridge from the previous year
+    
+    
+    
+    # Example    
+    # tibble(type = c("benchmark", "custom"),
+    #        year = c(2022, 2022),
+    #        emissions = c(345, 263))%>%
+    #   select(type, year, emissions) %>% 
+    #   pivot_wider(id_cols = c(year), names_from = type, values_from = emissions) %>%
+    #   mutate(change = custom - benchmark)
+    # 
+    gaps = bind_rows(benchmark, custom) %>%
+      select(type, year, emissions) %>% 
+      pivot_wider(id_cols = c(year), names_from = type, values_from = emissions) %>%
+      # Compute Quantities
+      mutate(change = custom - benchmark,
+             percent = change / benchmark) %>%
+      rowwise() %>%
+      mutate(ymin = min(c(custom, benchmark), na.rm = TRUE),
+             ymax = max(c(custom, benchmark), na.rm = TRUE)) %>%
+      ungroup() %>%
+      # Generate Labels
+      mutate(label_custom = scales::number(custom, accuracy = 0, scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit))),
+             label_benchmark = scales::number(benchmark, accuracy = 0, scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit))),
+             label_change = scales::number(change, accuracy = 0, style_positive = "plus", style_negative = "minus", scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit))),
+             label_percent = scales::percent(percent, style_positive = "plus", style_negative = "minus", suffix = "%")
+             ) %>%
+      mutate(text = paste0(
+       "<b>Year</b>: ", year,
+       "<br>", 
+       "<b>Benchmark</b>:", label_benchmark,
+       "<br>",
+       "<b>Your Scenario</b>:", label_custom,
+       "<br>",
+       "<b>Change</b>:", label_change, " (", label_percent, ")"))
+    
+    gg = ggplot() +
+      geom_line(
+        data = benchmark, 
+        mapping = aes(x = year, y = emissions, group = type, color = type, text = text)) +
+      geom_point(
+        data = benchmark,
+        mapping = aes(x = year, y= emissions, color = type, text = text), size = 1.25) +
+      geom_line(
+        data = custom,
+        mapping = aes(x = year, y= emissions, group = type, color = type, text = text))+
+      geom_point(
+        data = custom,
+        mapping = aes(x = year, y= emissions, color = type, text = text), size = 1.25)  +
+      geom_linerange(
+        data = gaps,
+        mapping = aes(x = year, ymin = ymin, ymax = ymax, text = text)) +
+      
+      scale_color_manual(breaks = c("benchmark", "custom"),
+                         labels = c("Benchmark", "Your Scenario"),
+                         values = c("grey", "red")) +
+      scale_y_continuous(labels = scales::label_number(scale_cut = cut_si(.pollutant_unit_abbr))) +
+      labs(y = paste0("Estimated Emissions (", .pollutant_unit, " of ", .pollutant_label, ")"),
+           x = "Year",
+           title = paste0("Projected Emissions over Time in ", .pollutant_label))
+      
+    pp = ggplotly( gg, tooltip = "text")
+    
+    return(pp)
   })
   
   
-  # RENDER INPUT VALUES ###############################
-  output$dataview <- renderPrint({ bind_cols(xdata(), ydata()) }) 
 }
 
 
 shinyApp(ui = ui, server = server)
+
+
+
 
 
 
