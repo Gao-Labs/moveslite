@@ -9,3 +9,5 @@ gert::git_add(dir(all.files = TRUE))
 gert::git_commit_all(message = "fixed the output issue in app.R")
 # Push those files to Github
 gert::git_push()
+
+

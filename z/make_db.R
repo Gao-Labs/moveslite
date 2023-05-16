@@ -50,3 +50,21 @@ dbDisconnect(con)
 rm(list = ls())
 # Repeat for covariates database
 
+
+
+# Make CSVs
+source("R/connect.R")
+db = connect("data")
+library(dplyr)
+library(readr)
+db %>% tbl("d36109") %>%
+  collect() %>%
+  write_csv("z/d36109.csv")
+dbDisconnect(db)
+db = connect("cov")
+db %>% tbl("c36109") %>%
+  collect() %>%
+  write_csv("z/c36109.csv")
+dbDisconnect(db)
+rm(list = ls())
+
