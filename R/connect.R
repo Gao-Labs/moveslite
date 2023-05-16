@@ -16,12 +16,12 @@ connect = function(.type = "data"){
       # On Repository computers:
       path = "z/db.sqlite"
       conn = dbConnect(RSQLite::SQLite(), path)
-    }
+    },
 
-    #"cov" = {
-    #  path =  "C:/Users/tmf77/OneDrive - Cornell University/Documents/rstudio/cat_static/db/cov.sqlite"
-    #  conn = dbConnect(RSQLite::SQLite(), path)
-    #}
+    "cov" = {
+      path =  "z/cov.sqlite"
+      conn = dbConnect(RSQLite::SQLite(), path)
+    }
   )
   return(conn)
 }
