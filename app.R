@@ -8,73 +8,155 @@ require(plotly)
 require(ggplot2)
 library(tidyr)
 library(scales)
+library(bslib)
 rm(list = ls()); gc()
 
+# Write a ui function for this module
+column_wrap = function(l, width,  ...){
+  layout = bslib::layout_column_wrap(width = width, ...)
+  layout$children <- l
+  # Add in extra style attributes here.
+  #layout$attrbs$style <- paste(layout$attrbs$style, style)
+  return(layout)
+}
+ui_card = function(..., margin = c(0, 0), id = ""){
+
+  # Write an inline CSS class called 'hideslide'
+  # we can use to turn off any slides that are NOT the activated slide.
+  internalcss = tags$head(tags$style(".hideslide { display: none; }"))
+
+  # Graphic
+  result = card(
+    # Card head settings
+    internalcss, id = id,
+    wrapper = NULL,
+    style = css(
+      padding = "0px", `margin-top` = paste0(margin[1], "px"),
+      `margin-bottom` = paste0(margin[2], "px")),
+    ...)
+  return(result)
+}
 # Example inputs
 # input = list(geoid = "36109", by = 16, pollutant = 98, modeltype = "best", startyear = 2023)
 # sets = list()
 
 mycss = "
-  .text-output-label {
-    margin-left: 15px;
+  .control-label {
+    margin-bottom: 5px;  /* Adjust the margin value as per your needs */
+  }
+  .well {
+    margin-right: 5px;
   }
 
+  body {
+    font-size: 14px;
+  }
+  .shiny-bound-input, .shiny-output-container {
+    font-size: 14px;  /* Adjust the font size for input/output elements */
+  }
+
+  .form-label, .shiny-input-container .control-label {
+    margin-bottom: 0.05rem;
+    padding-bottom: 0px;
+}
+  .text-output-label {
+    margin-left: 5px;
+    padding: 0px;
+  }
   .text-output {
     border: 1px solid #ced4da;
     background-color: #f5f5f5;
     border-radius: 4px;
     padding: 6px 12px;
     margin-top: 5px;
-    margin-left: 15px;
-    margin-right: 15px;
-    margin-bottom: 15px;
+    margin-left: 2px;
+    margin-right: 2px;
+    margin-bottom: 5px;
+    overflow: none;
     width: 100px;
     }
   .custom-sidebar {
-    width: 150px;
+    width: 175px;
+    margin-right: 5px;
   }
-
 
   " %>%
   HTML()
 
 
+
 ui <- fluidPage(
   # Add head and styling
   tags$head( tags$style( mycss )),
+  # Add theme
+  theme = bslib::bs_theme(version = 5, bootswatch = "cerulean"),
+  shinyjs::useShinyjs(),
+  # Add title
   titlePanel("Calculator"),
-  # Create a sidebar for editing
-  sidebarPanel(
-    class = "custom-sidebar",
-    fluidRow(
+
+  # Layout Sidebar vs. Main Panel
+  sidebarLayout(
+    position = "left", fluid = TRUE,
+
+    sidebarPanel(
+      width = 2,
+      style = "max-width: 175px; min-width: 175x;",
+      # Add your sidebar content here
       selectInput(inputId = "modeltype", label = "MODEL TYPE",choices = c("Simplest" = "simplest", "Best" = "best"), selected = "best", width = "100px"),
       selectInput(inputId = "geoid", label = "AREA", choices = c("Tompkins" = 36109), selected = 36109, width = "200px"),
       selectInput(inputId = "pollutant", label = "POLLUTANT", choices = c("CO2e" = 98), selected = 98, width = "200px"),
       selectInput(inputId = "by", label = "AGGREGATION", choices = c("Overall" = 16), selected = 16, width = "200px"),
       selectInput(inputId = "startyear", label = "START YEAR", choices = 1990:2060,
                   selected = stringr::str_sub(Sys.Date(), 1,4), width = "200px")
-    )
-  ),
-  mainPanel(
-    fluidRow(
-      column(
-        width = 3, offset = 0,
-        textOutput(outputId = "accuracy")
-        )
+
     ),
 
-    fluidRow(
-      div(id = "inputsets"),
-      actionButton("add_set", "Add Input Set"),
-      actionButton("remove_set", "Remove Input Set")
-    ),
-    fluidRow(
-      verbatimTextOutput("input_values"),
-      plotlyOutput("visual")
+    # In the main panel...
+    mainPanel(
+      width = 10,
+      style = "max-width: 1200px; min-width: 300px; margin: 0 auto; padding-left: 0px; padding-top: 5px;",
+      # Add a toprow
+      column_wrap(
+        width = .25, gap = "2px", style = "padding-left: 0px; padding-right: 0px;",
+        l = list(
+          card(tags$h4("Accuracy: ", textOutput(outputId = "accuracy", inline = FALSE) )),
+          card("About this Model"),
+          card("Box3"),
+          card("Box4") )  ),
+      # INPUT SETS ################################################
+      fluidRow(
+        div(id = "inputsets"),
+        # BUTTONS ################################################
+        card(
+          style = "border-color: transparent; padding: 2px; margin-bottom: 2px;",
+          card_body(
+            style = "padding: 5px; margin: 0px;",
+            actionButton("add_set", "Add Input Set"),
+            actionButton("remove_set", "Remove Input Set"))
+        )
+      ),
+      # OUTPUT GRAPHICS ################################################
+      fluidRow(
+        # STATISTIC ###################################################
+        column(
+          width = 3, offset = 0,
+          ui_card(card_header("Average Change in Emissions"),
+               card_body_fill(textOutput(outputId = "stat", container = tags$h5)),
+                              style = "max-height: 100%;")
+        ),
+        # PLOT ###################################################
+        column(
+          width = 9, offset = 0,
+          #verbatimTextOutput("input_values"),
+          card(plotlyOutput("visual"))
+        )
+      )
+
     )
 
   )
 )
+
 
 
 
@@ -120,7 +202,7 @@ server <- function(input, output, session) {
       "vmt", "VMT",
       "vehicles", "Vehicles",
       "sourcehours", "Time Driven",
-      "starts", "Vehicle Starts",
+      "starts", "Starts",
       "emissions", "Emissions",
       "change", "Change"
     ) %>%
@@ -130,8 +212,9 @@ server <- function(input, output, session) {
     bundle_inputs = labeldata %>%
       filter(var %in% .vars) %>%
       split(.$var, drop = TRUE) %>%
-      map(~column(textInput(inputId = ns(.$var), label = .$label, value = .data[[.$var]], width = "100px"),
-                  width = 2, offset = 0))
+      map(~ui_card(
+        style = "padding-left: 5px; border-color: transparent;",
+        textInput(inputId = ns(.$var), label = .$label, value = .data[[.$var]], width = "100px") ))
 
 
     .outcomes = c("emissions", "change")
@@ -140,18 +223,21 @@ server <- function(input, output, session) {
     bundle_outputs = labeldata %>%
       filter(var %in% .outcomes) %>%
       split(.$var, drop = TRUE) %>%
-      map(~column(
+      map(~ui_card(
+        style = "padding-left: 15px; padding-right: 0px; overflow: hidden; border-color: transparent;",
         fluidRow(
-          tags$b(.x$label, class = "text-output-label"),
+          tags$span(.x$label, class = "text-output-label"),
           div(
             class = "text-output",
             # Label each as, for example, set_1-emissions_1, set_2-emissions_2
-            textOutput(outputId = ns(.x$var)))
-        ),
-        width = 2, offset = 0) )
+            textOutput(outputId = ns(.x$var))) )  )   )
 
     # Combine them
-    result = append(bundle_inputs, bundle_outputs) %>% fluidRow(id = ns("inputset"))
+    result = append(bundle_inputs, bundle_outputs) %>%
+      column_wrap(
+        l = ., width = 1/7,
+        gap = "2px", style = "padding-left: 0px; padding-right: 0px;") %>%
+      fluidRow(id = ns("inputset"), style = "padding-right: 0px;")
 
     return(result)
   }
@@ -305,12 +391,19 @@ server <- function(input, output, session) {
       stats = tibble(accuracy = "", sigma = "",  p_value = "", df = "",nobs = "" )
     }
   }) %>% bindEvent({model()})
-  # OUTPUT GOODNESS OF FIT ####################################################
-  observe({
-    output$accuracy = renderText({ stats()$accuracy })
-  }) %>% bindEvent({stats()})
 
-  # Update these outputs every time that a value changes...
+  # OUTPUT GOODNESS OF FIT ####################################################
+  output$accuracy = renderText({ stats()$accuracy })
+  output$stat = renderText({
+    setcount = sets$count;
+    if(setcount > 0){
+      stat =  ydata() %>% filter(type == "custom") %>% with(change) %>% mean(na.rm = TRUE) %>%
+        number(accuracy = 1, style_positive = "plus", style_negative = "minus", scale_cut = cut_si(unit = ""))
+    }else{ stat = "" }
+    return(stat)
+  })
+
+  # UPDATE PREDICTIONS ########################################
   ydata = reactive({
     # Examples
     # sets = list(count = 1)
@@ -435,7 +528,7 @@ server <- function(input, output, session) {
                               type != "custom" ~ "benchmark"),
              label_type = factor(type, levels = c("benchmark", "custom"),
                                  labels = c("Benchmark Scenario", "Your Scenario"))) %>%
-      mutate(label_emissions = scales::number(emissions, accuracy = 1, scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit)))) %>%
+      mutate(label_emissions = scales::number(emissions, accuracy = .1, scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit)))) %>%
       mutate(text = paste0(
         "<b>Type</b>: ", label_type,
         "<br>",
@@ -503,15 +596,34 @@ server <- function(input, output, session) {
         mapping = aes(x = year, ymin = ymin, ymax = ymax, text = text)) %>%
       suppressWarnings() +
 
-      scale_color_manual(breaks = c("benchmark", "custom"),
-                         labels = c("Benchmark", "Your Scenario"),
-                         values = c("grey", "red")) +
+      scale_color_manual(
+        breaks = c("Benchmark" = "benchmark", "Your Scenario" = "custom"),
+        name = "Scenario",
+        values = c("grey", "red")) +
       scale_y_continuous(labels = scales::label_number(scale_cut = cut_si(.pollutant_unit_abbr))) +
       labs(y = paste0("Estimated Emissions (", .pollutant_unit, " of ", .pollutant_label, ")"),
            x = "Year",
-           title = paste0("Projected Emissions over Time in ", .pollutant_label))
+           title = paste0("Projected Emissions over Time in ", .pollutant_label)) +
+      theme(legend.position = "none")
 
     pp = ggplotly( gg, tooltip = "text")
+
+    # Update configuration
+    pp = pp %>%
+      layout(hoverlabel = list(align = "left")) %>%
+      config(displayModeBar = TRUE, displaylogo = FALSE) %>%
+      config(modeBarButtonsToRemove = list(
+        "sendDataToCloud", "zoom2d", "pan2d", "select2d", "lasso2d",
+        "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d",
+        "hoverClosestCartesian", "hoverCompareCartesian",
+        "zoom3d", "pan3d", "orbitRotation", "tableRotation",
+        "handleDrag3d", "resetCameraDefault3d", "resetCameraLastSave3d",
+        "hoverClosest3d", "zoomInGeo", "zoomOutGeo", "resetGeo",
+        "hoverClosestGeo", "hoverClosestGl2d", "hoverClosestPie",
+        "toggleHover", "resetViews", "toImage", "toggleSpikelines",
+        "resetViewMapbox")
+      )
+
 
     return(pp)
   })
