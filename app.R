@@ -1,3 +1,11 @@
+#' @name app.R
+#' @title CAT Calculator ShinyApp Script
+#' @description User Interface and Server function (and supporting code) for running the calculator.
+
+# Clear environment and cache
+rm(list = ls()); gc()
+
+# Load packages
 library(dplyr)
 library(DBI)
 library(RSQLite)
@@ -9,7 +17,6 @@ require(ggplot2)
 library(tidyr)
 library(scales)
 library(bslib)
-rm(list = ls()); gc()
 
 # Write a ui function for this module
 column_wrap = function(l, width,  ...){
@@ -119,7 +126,11 @@ ui <- fluidPage(
       column_wrap(
         width = .25, gap = "2px", style = "padding-left: 0px; padding-right: 0px;",
         l = list(
-          card(tags$h4("Accuracy: ", textOutput(outputId = "accuracy", inline = FALSE) )),
+          # ACCURACY STATISTIC ################################
+          ui_card(
+            card_header("Accuracy"),
+            card_body_fill(textOutput(outputId = "accuracy", container = tags$h5)),
+            style = "max-height: 100%;"),
           card("About this Model"),
           card("Box3"),
           card("Box4") )  ),
@@ -390,10 +401,12 @@ server <- function(input, output, session) {
     }else{
       stats = tibble(accuracy = "", sigma = "",  p_value = "", df = "",nobs = "" )
     }
-  }) %>% bindEvent({model()})
+  })
 
   # OUTPUT GOODNESS OF FIT ####################################################
-  output$accuracy = renderText({ stats()$accuracy })
+  output$accuracy = renderText({ stats()$accuracy }) %>% bindEvent({ model() })
+
+
   output$stat = renderText({
     setcount = sets$count;
     if(setcount > 0){
@@ -476,9 +489,7 @@ server <- function(input, output, session) {
       # Get exact slice of n (setcount) rows of data
       customdata = reactive({ ydata() %>% filter(type == "custom") %>% arrange(year) %>% select(emissions, change) })
       # Let's generate a reactive value, containing all the inputs from that set.
-      lapply(
-        X = 1:nrow(customdata()),
-        FUN = function(i){
+      lapply(X = 1:nrow(customdata()), FUN = function(i){
           # Get reactive vector of names
           input_names = reactive({ names(input)[ stringr::str_detect(names(input), pattern = paste0("set_", i)) ] })
           # Assign the output
@@ -611,18 +622,18 @@ server <- function(input, output, session) {
     # Update configuration
     pp = pp %>%
       layout(hoverlabel = list(align = "left")) %>%
-      config(displayModeBar = TRUE, displaylogo = FALSE) %>%
-      config(modeBarButtonsToRemove = list(
-        "sendDataToCloud", "zoom2d", "pan2d", "select2d", "lasso2d",
-        "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d",
-        "hoverClosestCartesian", "hoverCompareCartesian",
-        "zoom3d", "pan3d", "orbitRotation", "tableRotation",
-        "handleDrag3d", "resetCameraDefault3d", "resetCameraLastSave3d",
-        "hoverClosest3d", "zoomInGeo", "zoomOutGeo", "resetGeo",
-        "hoverClosestGeo", "hoverClosestGl2d", "hoverClosestPie",
-        "toggleHover", "resetViews", "toImage", "toggleSpikelines",
-        "resetViewMapbox")
-      )
+      config(displayModeBar = FALSE, displaylogo = FALSE)
+      # config(modeBarButtonsToRemove = list(
+      #   "sendDataToCloud", "zoom2d", "pan2d", "select2d", "lasso2d",
+      #   "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d",
+      #   "hoverClosestCartesian", "hoverCompareCartesian",
+      #   "zoom3d", "pan3d", "orbitRotation", "tableRotation",
+      #   "handleDrag3d", "resetCameraDefault3d", "resetCameraLastSave3d",
+      #   "hoverClosest3d", "zoomInGeo", "zoomOutGeo", "resetGeo",
+      #   "hoverClosestGeo", "hoverClosestGl2d", "hoverClosestPie",
+      #   "toggleHover", "resetViews", "toImage", "toggleSpikelines",
+      #   "resetViewMapbox")
+      # )
 
 
     return(pp)
