@@ -99,7 +99,9 @@ mycss = "
     width: 100px;
     }
   .custom-sidebar {
-    width: 175px;
+    width: 225px;
+    min-width: 175px;
+    max-width: 250px;
     margin-right: 5px;
   }
 
@@ -153,6 +155,10 @@ tooltip = function(.title, ...){
 }
 
 
+
+
+
+
 #add this file and collapsible nature should work.
 
 ui <- fluidPage(
@@ -180,7 +186,7 @@ ui <- fluidPage(
         style = "margins: 0px; overflow: hidden;",
         width = .50, style = css(grid_template_columns = "3fr 4fr"),
         l = list(
-          card_title("CAT CALCULATOR",
+          card_title(tags$span("CAT CALCULATOR", icon("calculator")),
                      style = "font-size: 24px; text-align: left; margin-bottom: 0px; margin-top: 0px; padding: 0px; " ),
           card_body("powered by MOVESLite @ Cornell University",
                     style = "font-size: 14px; font-style: italic; text-align: right; vertical-align: bottom; overflow: hidden; border-color: transparent; margins: 0px; padding: 0px;")
@@ -194,15 +200,29 @@ ui <- fluidPage(
   # Layout Sidebar vs. Main Panel
   sidebarLayout(
     position = "left", fluid = TRUE,
+    #read_rds("core.rds")$choices$search %>% head()
+
 
     sidebarPanel(
       width = 2,
       style = "max-width: 175px; min-width: 175x;",
       # Add your sidebar content here
       selectInput(inputId = "modeltype", label = "MODEL TYPE",choices = c("Simplest" = "simplest", "Best" = "best"), selected = "best", width = "100px"),
-      selectInput(inputId = "geoid", label = "AREA", choices = c("Tompkins" = 36109), selected = 36109, width = "200px"),
-      selectInput(inputId = "pollutant", label = "POLLUTANT", choices = c("CO2e" = 98), selected = 98, width = "200px"),
-      selectInput(inputId = "by", label = "AGGREGATION", choices = c("Overall" = 16), selected = 16, width = "200px"),
+      selectInput(inputId = "geoid", label = "AREA", choices = read_rds("appdata.rds"), selected = 36109, width = "200px"),
+      selectInput(inputId = "pollutant", label = "POLLUTANT",
+                  choices = set_names(x = read_rds("core.rds")$choices$pollutant %>% as.numeric(),
+                                      nm = read_rds("core.rds")$choices$pollutant %>% names()),
+                  selected = 98, width = "200px"),
+      selectInput(inputId = "by", label = "AGGREGATION",
+                  choices = c("Overall" = 16,
+                    "by Source" = 8,
+                    "by Fuel Type" = 14,
+                    "by Regulatory Class" = 12,
+                    "by Road Type" = 15),
+                    selected = 16, width = "200px"),
+      selectInput(inputId = "category", label = "SUBTYPE",
+                  choices = c("Overall" = 16),
+                  selected = 16, width = "200px"),
       selectInput(inputId = "startyear", label = "START YEAR", choices = 1990:2060,
                   selected = stringr::str_sub(Sys.Date(), 1,4), width = "200px"),
       selectInput(inputId = "unit", label = "UNIT", choices = c("tons" = "t"), selected = "t", width = "200px")
@@ -217,7 +237,7 @@ ui <- fluidPage(
       navs_tab_card(
         id = "toolbar",
         title = tags$b("MODEL"), selected = "metrics",
-        nav(value = "metrics", title = "Metrics", icon = icon("car"),
+        nav(value = "metrics", title = "Metrics", icon = icon("weight-scale"),
             ## METRICS ###################################
             column_wrap(
               width = .25, gap = "2px",
@@ -296,12 +316,12 @@ ui <- fluidPage(
 
                   card_header(
                     style = "background-color: #2fa4e7;",
-                    tags$b("Years", style = "color: #FFFFFF;"),
+                    tags$b("Sample", style = "color: #FFFFFF;"),
                     tooltip(
                       .title = paste0(
                         "<b>Measure: Sample Size (N)</b>",
                         "<br>",
-                        "<i>Definition</i>: Total number of years and range of years of MOVES data analyzed in model."),
+                        "<i>Definition</i>: Total number of yearly observations and range of years of MOVES data analyzed in model."),
                       icon("info-circle")  ) ),
                   card_body_fill(
                     textOutput(outputId = "nyears", container = tags$h3),
@@ -319,7 +339,7 @@ ui <- fluidPage(
             )
         ),
         ## ABOUT ###################################
-        nav(value = "model", title = "About this Model", icon = icon("car"),
+        nav(value = "model", title = "About this Model", icon = icon("magnifying-glass-chart"),
             card_body_fill(
               tags$ul(
                 tags$li("This equation shows the most accurate model of emissions over time in <b><i>your local area</b></i>, according to our algorithms." %>% HTML()),
@@ -338,18 +358,6 @@ ui <- fluidPage(
             )
         )
       ),
-      # INPUT SETS ################################################
-      fluidRow(
-        div(id = "inputsets"),
-        # BUTTONS ################################################
-        card(
-          style = "border-color: transparent; padding: 2px; margin-bottom: 2px;",
-          card_body(
-            style = "padding: 5px; margin: 0px;",
-            actionButton("add_set", "Add Input Set"),
-            actionButton("remove_set", "Remove Input Set"))
-        )
-      ),
       # OUTPUT GRAPHICS ################################################
       fluidRow(
         # STATISTIC ###################################################
@@ -360,10 +368,15 @@ ui <- fluidPage(
             ui_card(
               card_header(
                 style = "background-color: #2fa4e7;",
-                tags$b("Average Change in Emissions", style = "color: #FFFFFF;")),
+                tags$b("Average Change in Emissions", style = "color: #FFFFFF;", icon("leaf"))),
               card_body_fill(
                 textOutput(outputId = "stat", container = tags$h3),
                 " per year",
+                tags$br(),
+                textInput(inputId = "scenario_benchmark", label = "BASELINE", value = "Baseline", width = "100%"),
+                textInput(inputId = "scenario_yours", label = "YOUR SCENARIO", value = "Your Scenario", width = "100%"),
+
+
                 style = "text-align: center; vertical-align: middle; max-height: 100%;"
               ),
               style = "max-height: 100%;"),
@@ -371,9 +384,24 @@ ui <- fluidPage(
             # PLOT ###################################################
             card(plotlyOutput("visual"))
           )
+        )
+      ),
 
+
+      # INPUT SETS ################################################
+      fluidRow(
+        div(id = "inputsets"),
+        # BUTTONS ################################################
+        card(
+          style = "border-color: transparent; padding: 2px; margin-bottom: 2px;",
+          card_body(
+            style = "padding: 5px; margin: 0px;",
+            actionButton(inputId = "add_set", icon = icon("circle-plus"), label =  "Add Input Set"),
+            actionButton(inputId = "remove_set", icon = icon("circle-minus"), label =  "Remove Input Set"))
         )
       )
+
+
     )
 
   )
@@ -396,6 +424,32 @@ server <- function(input, output, session) {
   db = connect("cov")
   cov = db %>% tbl("areas") %>% filter(level %in% c("county", "state", "nation")) %>% collect()
   dbDisconnect(db); remove(db)
+
+  ### UPDATE CATEGORY ##############################
+  # Whenever you change the 'by' Aggregation field, the options for Category should change too.
+
+  observe({
+    req(input$by)
+    .by = input$by
+    # Update choices...
+    .byname = switch(
+      EXPR = .by,
+      "16" = "overall",
+      "8" = "sourcetype",
+      "12" = "regclass",
+      "14" = "fueltype",
+      "15" = "roadtype")
+
+    # Get ID
+    .choices = read_rds("core.rds")$keywords %>%
+      filter(type == .byname) %>%
+      with(set_names(as.integer(.$id), .$term))
+
+    updateSelectInput(inputId = "category", label = "SUBTYPE",
+                      choices = .choices, selected = .choices[1])
+
+  }) %>% bindEvent({ input$by })
+
 
   #' @name ui_set()
   #' @description Function to generate a set of text inputs and output boxes
@@ -490,7 +544,7 @@ server <- function(input, output, session) {
     download = query(
       .db = db, .table = .table,
       .filters = c(.pollutant = .pollutant),
-      .vars = c("by", "year", "vmt", "vehicles", "starts", "sourcehours"))
+      .vars = c("by", "sourcetype", "regclass", "fueltype", "roadtype", "year", "vmt", "vehicles", "starts", "sourcehours"))
     # Disconnect from database
     dbDisconnect(db); gc()
     # Return the data!
@@ -500,31 +554,40 @@ server <- function(input, output, session) {
   # DEFAULT DATA #######################################
   default = reactive({
     # Require these before proceeding
-    req(download(), input$modeltype, input$by)
+    req(download(), input$modeltype, input$by, input$category)
+
     # Select just those variables from download()
     result = download() %>%
       # Filter to that aggregation level
       filter(by == input$by)
 
+    # If Aggregation level is NOT overall, then narrow it further.
+    if(input$by %in% c(8,12,14,15)){
+      # Depending on the aggregation level, aggregate it by one variable or the other using input$category
+      byname = switch(input$by, "8" = "sourcetype", "12" = "regclass", "14" = "fueltype", "15" = "roadtype")
+      print(paste(input$by, "--", input$category))
+      result = result %>% filter(!!sym(byname) == input$category)
+    }
 
     # Get variables of interest depending on input$modeltype
     .vars = switch(EXPR = input$modeltype, "simplest" = c("year", "vmt"), "best" = c("year", "vmt", "vehicles", "sourcehours", "starts"))
 
     default = result %>%
-      # Grab just variables; don't need geoid, pollutant, or by anymore
+      # Grab just variables; don't need geoid, pollutant, or by or categories anymore
       select(emissions, any_of(.vars))
 
     # Return and print completion message
     print("---default"); return(default)
   }) %>%
-    bindCache(input$geoid, input$pollutant, input$by, input$modeltype) %>%
-    # Trigger whenver download changes OR input$modeltype
-    bindEvent({download(); input$modeltype; input$by})
+    bindCache(input$geoid, input$pollutant, input$by, input$category, input$modeltype) %>%
+    # Trigger whenver download changes OR input$modeltype OR category changes.
+    bindEvent({download(); input$modeltype; input$category })
 
   # DEFAULT YEARLY INTERPOLATED DATA #######################################
   default_yearly = reactive({
     # Require these variables before proceeding
-    req(default(), sets$years )
+    req(input$by, input$category, default(), sets$years )
+
     # Load functions
     # source("R/setx.R")
     # Estimate for me each year-by-year, plus the previous years
@@ -539,7 +602,7 @@ server <- function(input, output, session) {
     # Return the output
     print("---default_yearly()"); return(default_yearly)
   }) %>%
-    bindCache(input$geoid, input$pollutant, input$by, input$modeltype, input$startyear) %>%
+    bindCache(input$geoid, input$pollutant, input$by, input$category, input$modeltype, input$startyear) %>%
     # Trigger whenver download changes OR input$modeltype
     bindEvent({default(); sets$years })
 
@@ -593,7 +656,7 @@ server <- function(input, output, session) {
     # Return and Print Message
     print("---model"); return(model)
   }) %>%
-    bindCache(input$geoid, input$pollutant, input$by, input$modeltype) %>%
+    bindCache(input$geoid, input$pollutant, input$by, input$category, input$modeltype) %>%
     bindEvent({default()})
 
   # GOODNESS OF FIT ###########################################################
@@ -618,7 +681,7 @@ server <- function(input, output, session) {
 
     stats = stats %>%
       mutate(yearrange = paste0(year_lower, " - ", year_upper),
-             nyears = paste0(nobs, " years"),
+             nyears = paste0(nobs, " cases"),
              # Get range
              yrange = abs(y_upper - y_lower),
              # Get percentage of range that sigma takes up
@@ -825,11 +888,20 @@ server <- function(input, output, session) {
   # RENDER VISUAL #################################
   output$visual = renderPlotly({
 
-    req(ydata())
+    req(ydata(), input$scenario_benchmark, input$scenario_yours, input$geoid, input$startyear, input$unit, input$pollutant)
+
+    .scenario_name_benchmark = input$scenario_benchmark
+    .scenario_name_yours = input$scenario_yours
 
     .highlight_color = "#2fa4e7"
-    .geoid_label = "Tompkins County"
-    .pollutant_label = "CO2 Equivalent"
+    .geoid_label = read_rds("areas.rds") %>% filter(geoid == input$geoid) %>% with(label)
+
+    .pollutant_info = read_rds("core.rds")$keywords %>%
+      filter(type == "pollutant") %>%
+      filter(id == input$pollutant)
+
+
+    .pollutant_label = .pollutant_info$term
     .pollutant_unit = switch(EXPR = input$unit, "t" = "tons")
     .pollutant_unit_abbr = stringr::str_sub(.pollutant_unit, 1, 1)
     .startyear = as.numeric(isolate({input$startyear}))
@@ -853,7 +925,7 @@ server <- function(input, output, session) {
       mutate(type = case_when(type == "custom" ~ "custom",
                               type != "custom" ~ "benchmark"),
              label_type = factor(type, levels = c("benchmark", "custom"),
-                                 labels = c("Benchmark Scenario", "Your Scenario"))) %>%
+                                 labels = c(.scenario_name_benchmark, .scenario_name_yours))) %>%
       mutate(label_emissions = scales::number(emissions, accuracy = .1, scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit)))) %>%
       mutate(text = paste0(
         "<b>Type</b>: ", label_type,
@@ -894,11 +966,14 @@ server <- function(input, output, session) {
       mutate(text = paste0(
         "<b>Year</b>: ", year,
         "<br>",
-        "<b>Benchmark</b>:", label_benchmark,
+        "<b>", .scenario_name_benchmark, "</b>:", label_benchmark,
         "<br>",
-        "<b>Your Scenario</b>:", label_custom,
+        "<b>", .scenario_name_yours, "</b>:", label_custom,
         "<br>",
         "<b>Change</b>:", label_change, " (", label_percent, ")"))
+
+
+
 
     gg = ggplot() +
       geom_line(
@@ -927,7 +1002,7 @@ server <- function(input, output, session) {
         shape = 21, size = 3, fill = "white", stroke = 0.75)  %>%
       suppressWarnings() +
       scale_color_manual(
-        breaks = c("Benchmark" = "benchmark", "Your Scenario" = "custom"),
+        breaks = c(.scenario_name_benchmark = "benchmark", .scenario_name_yours = "custom"),
         name = "Scenario",
         guide = "none",
         values = c("grey", .highlight_color)) +
