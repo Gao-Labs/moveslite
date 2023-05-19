@@ -137,6 +137,7 @@ mycss = "
     position: relative;
   }
 
+
   " %>%
   HTML()
 
@@ -359,20 +360,29 @@ ui <- fluidPage(
             )
         ),
 
-        nav_item(
-          dropdownButton(
-            label = "More Features", icon = icon("person"),
-            status = "primary", circle = FALSE,size = "sm",
-            tooltip = tooltipOptions(title = "Click to Learn More!"),
-              tags$b("SUBSCRIBE FOR MORE FEATURES!", style = "font-size: 14px;"),
-              textInput(inputId = "email", label = "EMAIL", width = "200px",
-                        placeholder = "youremail@gmail.com"),
-              actionButton(inputId = "submit_email", label = "SUBMIT",
-                           icon = icon("person"), width = "100px")
-          )
+        nav(title = "More", icon = icon("gear"), value = "more",
+            # Multi Columns
+                column_wrap(
+                  width = .25, gap = "2px",
+                  style = css(
+                    `padding-left` = "0px",
+                    `padding-right` = "0px",
+                    grid_template_columns = "1fr 1fr"),
+                  l = list(
+                    card_body_fill(
+                      tags$b("Subscribe for More Features!"),
+                      textInput(inputId = "email", label = "EMAIL", width = "200px",
+                                placeholder = "youremail@gmail.com")
+                    ),
+                    card_body_fill(
+                      actionButton(inputId = "submit_email", label = "SUBMIT",
+                                   icon = icon("person"), width = "100px")    )
+                   )
+          
+                ) # end of column wrap
+        ) # end of nav
 
-        )
-      ),
+      ),   # end of navtab
       # OUTPUT GRAPHICS ################################################
       fluidRow(
         # STATISTIC ###################################################
@@ -1056,8 +1066,3 @@ server <- function(input, output, session) {
 
 
 shinyApp(ui = ui, server = server)
-
-
-
-
-
