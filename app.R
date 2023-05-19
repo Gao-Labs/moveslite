@@ -6,6 +6,7 @@
 rm(list = ls()); gc()
 
 # Load packages
+library(readr)
 library(dplyr)
 library(DBI)
 library(RSQLite)
@@ -21,7 +22,7 @@ library(bslib)
 # https://datalorax.github.io/equatiomatic/articles/colors.html
 library(equatiomatic)
 library(flexdashboard)
-
+library(shinyWidgets)
 # Write a ui function for this module
 column_wrap = function(l, width,  ...){
   layout = bslib::layout_column_wrap(width = width, ...)
@@ -215,11 +216,11 @@ ui <- fluidPage(
                   selected = 98, width = "200px"),
       selectInput(inputId = "by", label = "AGGREGATION",
                   choices = c("Overall" = 16,
-                    "by Source" = 8,
-                    "by Fuel Type" = 14,
-                    "by Regulatory Class" = 12,
-                    "by Road Type" = 15),
-                    selected = 16, width = "200px"),
+                              "by Source" = 8,
+                              "by Fuel Type" = 14,
+                              "by Regulatory Class" = 12,
+                              "by Road Type" = 15),
+                  selected = 16, width = "200px"),
       selectInput(inputId = "category", label = "SUBTYPE",
                   choices = c("Overall" = 16),
                   selected = 16, width = "200px"),
@@ -356,6 +357,20 @@ ui <- fluidPage(
                   uiOutput(outputId = "equation"))
               )
             )
+        ),
+
+        nav_item(
+          dropdownButton(
+            label = "More Features", icon = icon("person"),
+            status = "primary", circle = FALSE,size = "sm",
+            tooltip = tooltipOptions(title = "Click to Learn More!"),
+              tags$b("SUBSCRIBE FOR MORE FEATURES!", style = "font-size: 14px;"),
+              textInput(inputId = "email", label = "EMAIL", width = "200px",
+                        placeholder = "youremail@gmail.com"),
+              actionButton(inputId = "submit_email", label = "SUBMIT",
+                           icon = icon("person"), width = "100px")
+          )
+
         )
       ),
       # OUTPUT GRAPHICS ################################################
@@ -382,7 +397,7 @@ ui <- fluidPage(
               style = "max-height: 100%;"),
 
             # PLOT ###################################################
-            card(plotlyOutput("visual"))
+            card(plotlyOutput("visual", height = "300px"), style = "max-height: 100%; min-height: 300px;")
           )
         )
       ),
@@ -400,10 +415,7 @@ ui <- fluidPage(
             actionButton(inputId = "remove_set", icon = icon("circle-minus"), label =  "Remove Input Set"))
         )
       )
-
-
     )
-
   )
 )
 
@@ -894,149 +906,149 @@ server <- function(input, output, session) {
     .scenario_name_yours = input$scenario_yours
 
     .highlight_color = "#2fa4e7"
-    .geoid_label = read_rds("areas.rds") %>% filter(geoid == input$geoid) %>% with(label)
+      .geoid_label = read_rds("areas.rds") %>% filter(geoid == input$geoid) %>% with(label)
 
-    .pollutant_info = read_rds("core.rds")$keywords %>%
-      filter(type == "pollutant") %>%
-      filter(id == input$pollutant)
-
-
-    .pollutant_label = .pollutant_info$term
-    .pollutant_unit = switch(EXPR = input$unit, "t" = "tons")
-    .pollutant_unit_abbr = stringr::str_sub(.pollutant_unit, 1, 1)
-    .startyear = as.numeric(isolate({input$startyear}))
-    #.startyear = 2023
-    # Get the most recently supplied 5 year increment
-    .prioryear = .startyear %>%
-      paste0(., "-01-01") %>%
-      lubridate::date() %>%
-      lubridate::floor_date(unit = "5 years") %>%
-      lubridate::year()
-    .prioryear = if(.prioryear < 1990){ 1990 }else{ .prioryear }
-
-    bridge = ydata() %>% filter(type == "pre_benchmark" & year == .prioryear) %>% mutate(type = "custom")
+      .pollutant_info = read_rds("core.rds")$keywords %>%
+        filter(type == "pollutant") %>%
+        filter(id == input$pollutant)
 
 
-    .ydata = ydata() %>%
-      filter(type %in% c("custom", "benchmark", "pre_benchmark", "post_benchmark")) %>%
-      # Join in the bridge year
-      bind_rows(bridge) %>%
-      # Mutate labels
-      mutate(type = case_when(type == "custom" ~ "custom",
-                              type != "custom" ~ "benchmark"),
-             label_type = factor(type, levels = c("benchmark", "custom"),
-                                 labels = c(.scenario_name_benchmark, .scenario_name_yours))) %>%
-      mutate(label_emissions = scales::number(emissions, accuracy = .1, scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit)))) %>%
-      mutate(text = paste0(
-        "<b>Type</b>: ", label_type,
-        "<br>",
-        "<b>Year</b>: ", year,
-        "<br>",
-        "<b>Emissions</b>: ", label_emissions))
+      .pollutant_label = .pollutant_info$term
+      .pollutant_unit = switch(EXPR = input$unit, "t" = "tons")
+      .pollutant_unit_abbr = stringr::str_sub(.pollutant_unit, 1, 1)
+      .startyear = as.numeric(isolate({input$startyear}))
+      #.startyear = 2023
+      # Get the most recently supplied 5 year increment
+      .prioryear = .startyear %>%
+        paste0(., "-01-01") %>%
+        lubridate::date() %>%
+        lubridate::floor_date(unit = "5 years") %>%
+        lubridate::year()
+      .prioryear = if(.prioryear < 1990){ 1990 }else{ .prioryear }
 
-    benchmark = .ydata %>% filter(type == "benchmark")
-    custom = .ydata %>% filter(type == "custom")
-
-    # Get the bridge from the previous year
-
-    # Example
-    # tibble(type = c("benchmark", "custom"),
-    #        year = c(2022, 2022),
-    #        emissions = c(345, 263))%>%
-    #   select(type, year, emissions) %>%
-    #   pivot_wider(id_cols = c(year), names_from = type, values_from = emissions) %>%
-    #   mutate(change = custom - benchmark)
-    #
-    gaps = bind_rows(benchmark, custom) %>%
-      select(type, year, emissions) %>%
-      pivot_wider(id_cols = c(year), names_from = type, values_from = emissions) %>%
-      # Compute Quantities
-      mutate(change = custom - benchmark,
-             percent = change / benchmark) %>%
-      rowwise() %>%
-      mutate(ymin = min(c(custom, benchmark), na.rm = TRUE),
-             ymax = max(c(custom, benchmark), na.rm = TRUE)) %>%
-      ungroup() %>%
-      # Generate Labels
-      mutate(label_custom = scales::number(custom, accuracy = 0, scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit))),
-             label_benchmark = scales::number(benchmark, accuracy = 0, scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit))),
-             label_change = scales::number(change, accuracy = 0, style_positive = "plus", style_negative = "minus", scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit))),
-             label_percent = scales::percent(percent, style_positive = "plus", style_negative = "minus", suffix = "%")
-      ) %>%
-      mutate(text = paste0(
-        "<b>Year</b>: ", year,
-        "<br>",
-        "<b>", .scenario_name_benchmark, "</b>:", label_benchmark,
-        "<br>",
-        "<b>", .scenario_name_yours, "</b>:", label_custom,
-        "<br>",
-        "<b>Change</b>:", label_change, " (", label_percent, ")"))
+      bridge = ydata() %>% filter(type == "pre_benchmark" & year == .prioryear) %>% mutate(type = "custom")
 
 
+      .ydata = ydata() %>%
+        filter(type %in% c("custom", "benchmark", "pre_benchmark", "post_benchmark")) %>%
+        # Join in the bridge year
+        bind_rows(bridge) %>%
+        # Mutate labels
+        mutate(type = case_when(type == "custom" ~ "custom",
+                                type != "custom" ~ "benchmark"),
+               label_type = factor(type, levels = c("benchmark", "custom"),
+                                   labels = c(.scenario_name_benchmark, .scenario_name_yours))) %>%
+        mutate(label_emissions = scales::number(emissions, accuracy = .1, scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit)))) %>%
+        mutate(text = paste0(
+          "<b>Type</b>: ", label_type,
+          "<br>",
+          "<b>Year</b>: ", year,
+          "<br>",
+          "<b>Emissions</b>: ", label_emissions))
+
+      benchmark = .ydata %>% filter(type == "benchmark")
+      custom = .ydata %>% filter(type == "custom")
+
+      # Get the bridge from the previous year
+
+      # Example
+      # tibble(type = c("benchmark", "custom"),
+      #        year = c(2022, 2022),
+      #        emissions = c(345, 263))%>%
+      #   select(type, year, emissions) %>%
+      #   pivot_wider(id_cols = c(year), names_from = type, values_from = emissions) %>%
+      #   mutate(change = custom - benchmark)
+      #
+      gaps = bind_rows(benchmark, custom) %>%
+        select(type, year, emissions) %>%
+        pivot_wider(id_cols = c(year), names_from = type, values_from = emissions) %>%
+        # Compute Quantities
+        mutate(change = custom - benchmark,
+               percent = change / benchmark) %>%
+        rowwise() %>%
+        mutate(ymin = min(c(custom, benchmark), na.rm = TRUE),
+               ymax = max(c(custom, benchmark), na.rm = TRUE)) %>%
+        ungroup() %>%
+        # Generate Labels
+        mutate(label_custom = scales::number(custom, accuracy = 0, scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit))),
+               label_benchmark = scales::number(benchmark, accuracy = 0, scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit))),
+               label_change = scales::number(change, accuracy = 0, style_positive = "plus", style_negative = "minus", scale_cut = scales::cut_si(unit = paste0(" ", .pollutant_unit))),
+               label_percent = scales::percent(percent, style_positive = "plus", style_negative = "minus", suffix = "%")
+        ) %>%
+        mutate(text = paste0(
+          "<b>Year</b>: ", year,
+          "<br>",
+          "<b>", .scenario_name_benchmark, "</b>:", label_benchmark,
+          "<br>",
+          "<b>", .scenario_name_yours, "</b>:", label_custom,
+          "<br>",
+          "<b>Change</b>:", label_change, " (", label_percent, ")"))
 
 
-    gg = ggplot() +
-      geom_line(
-        data = benchmark,
-        mapping = aes(x = year, y = emissions, group = type, color = type, text = text),
-        linewidth = 1.5) %>%
-      suppressWarnings() +
-      geom_line(
-        data = custom,
-        mapping = aes(x = year, y= emissions, group = type, color = type, text = text),
-        linewidth = 1.5) %>%
-      suppressWarnings() +
-      geom_linerange(
-        data = gaps,
-        mapping = aes(x = year, ymin = ymin, ymax = ymax, text = text),
-        linewidth = 1.15) %>%
-      suppressWarnings() +
-      geom_point(
-        data = benchmark,
-        mapping = aes(x = year, y= emissions, color = type, text = text),
-        shape = 21, size = 3, fill = "white", stroke = 0.75) %>%
-      suppressWarnings() +
-      geom_point(
-        data = custom,
-        mapping = aes(x = year, y= emissions, color = type, text = text),
-        shape = 21, size = 3, fill = "white", stroke = 0.75)  %>%
-      suppressWarnings() +
-      scale_color_manual(
-        breaks = c(.scenario_name_benchmark = "benchmark", .scenario_name_yours = "custom"),
-        name = "Scenario",
-        guide = "none",
-        values = c("grey", .highlight_color)) +
-      # scale_fill_manual(
-      #   breaks = c("Benchmark" = "benchmark", "Your Scenario" = "custom"),
-      #   name = "Scenario",
-      #   guide = "none",
-      #   values = c("grey", .highlight_color)) +
-      scale_y_continuous(labels = scales::label_number(scale_cut = cut_si(.pollutant_unit_abbr))) +
-      labs(y = paste0("Estimated Emissions (", .pollutant_unit, " of ", .pollutant_label, ")"),
-           x = "Year",
-           title = paste0("Projected Emissions over Time in ", .pollutant_label)) +
-      theme(legend.position = "none")
-
-    pp = ggplotly( gg, tooltip = "text")
-
-    # Update configuration
-    pp = pp %>%
-      layout(hoverlabel = list(align = "left")) %>%
-      config(displayModeBar = FALSE, displaylogo = FALSE)
-    # config(modeBarButtonsToRemove = list(
-    #   "sendDataToCloud", "zoom2d", "pan2d", "select2d", "lasso2d",
-    #   "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d",
-    #   "hoverClosestCartesian", "hoverCompareCartesian",
-    #   "zoom3d", "pan3d", "orbitRotation", "tableRotation",
-    #   "handleDrag3d", "resetCameraDefault3d", "resetCameraLastSave3d",
-    #   "hoverClosest3d", "zoomInGeo", "zoomOutGeo", "resetGeo",
-    #   "hoverClosestGeo", "hoverClosestGl2d", "hoverClosestPie",
-    #   "toggleHover", "resetViews", "toImage", "toggleSpikelines",
-    #   "resetViewMapbox")
-    # )
 
 
-    return(pp)
+      gg = ggplot() +
+        geom_line(
+          data = benchmark,
+          mapping = aes(x = year, y = emissions, group = type, color = type, text = text),
+          linewidth = 1.5) %>%
+        suppressWarnings() +
+        geom_line(
+          data = custom,
+          mapping = aes(x = year, y= emissions, group = type, color = type, text = text),
+          linewidth = 1.5) %>%
+        suppressWarnings() +
+        geom_linerange(
+          data = gaps,
+          mapping = aes(x = year, ymin = ymin, ymax = ymax, text = text),
+          linewidth = 1.15) %>%
+        suppressWarnings() +
+        geom_point(
+          data = benchmark,
+          mapping = aes(x = year, y= emissions, color = type, text = text),
+          shape = 21, size = 3, fill = "white", stroke = 0.75) %>%
+        suppressWarnings() +
+        geom_point(
+          data = custom,
+          mapping = aes(x = year, y= emissions, color = type, text = text),
+          shape = 21, size = 3, fill = "white", stroke = 0.75)  %>%
+        suppressWarnings() +
+        scale_color_manual(
+          breaks = c(.scenario_name_benchmark = "benchmark", .scenario_name_yours = "custom"),
+          name = "Scenario",
+          guide = "none",
+          values = c("grey", .highlight_color)) +
+        # scale_fill_manual(
+        #   breaks = c("Benchmark" = "benchmark", "Your Scenario" = "custom"),
+        #   name = "Scenario",
+        #   guide = "none",
+        #   values = c("grey", .highlight_color)) +
+        scale_y_continuous(labels = scales::label_number(scale_cut = cut_si(.pollutant_unit_abbr))) +
+        labs(y = paste0("Estimated Emissions\n(", .pollutant_unit, " of ", .pollutant_label, ")"),
+             x = "Year",
+             title = paste0("Projected Emissions over Time in ", .pollutant_label)) +
+        theme(legend.position = "none")
+
+      pp = ggplotly( gg, tooltip = "text")
+
+      # Update configuration
+      pp = pp %>%
+        layout(hoverlabel = list(align = "left")) %>%
+        config(displayModeBar = FALSE, displaylogo = FALSE)
+      # config(modeBarButtonsToRemove = list(
+      #   "sendDataToCloud", "zoom2d", "pan2d", "select2d", "lasso2d",
+      #   "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d",
+      #   "hoverClosestCartesian", "hoverCompareCartesian",
+      #   "zoom3d", "pan3d", "orbitRotation", "tableRotation",
+      #   "handleDrag3d", "resetCameraDefault3d", "resetCameraLastSave3d",
+      #   "hoverClosest3d", "zoomInGeo", "zoomOutGeo", "resetGeo",
+      #   "hoverClosestGeo", "hoverClosestGl2d", "hoverClosestPie",
+      #   "toggleHover", "resetViews", "toImage", "toggleSpikelines",
+      #   "resetViewMapbox")
+      # )
+
+
+      return(pp)
   })
 
 
@@ -1044,7 +1056,6 @@ server <- function(input, output, session) {
 
 
 shinyApp(ui = ui, server = server)
-
 
 
 
