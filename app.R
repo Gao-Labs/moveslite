@@ -17,6 +17,10 @@ require(ggplot2)
 library(tidyr)
 library(scales)
 library(bslib)
+# devtools::install_github("https://github.com/datalorax/equatiomatic")
+# https://datalorax.github.io/equatiomatic/articles/colors.html
+library(equatiomatic)
+library(flexdashboard)
 
 # Write a ui function for this module
 column_wrap = function(l, width,  ...){
@@ -46,6 +50,16 @@ ui_card = function(..., margin = c(0, 0), id = ""){
 # Example inputs
 # input = list(geoid = "36109", by = 16, pollutant = 98, modeltype = "best", startyear = 2023)
 # sets = list()
+set_theme = function(){
+  require(ggplot2)
+  theme_set(
+    theme_classic(base_size = 12) +
+      theme(
+        plot.title = element_text(size = 14, hjust = 0.5, margin = margin(0,0,0,0, "cm")),
+        axis.ticks = element_blank(),
+        axis.line = element_blank())
+  )
+}
 
 mycss = "
   .control-label {
@@ -65,7 +79,9 @@ mycss = "
   .form-label, .shiny-input-container .control-label {
     margin-bottom: 0.05rem;
     padding-bottom: 0px;
-}
+  }
+
+  /* TEXT OUTPUT BOXES FOR EMISSIONS & CHANGE */
   .text-output-label {
     margin-left: 5px;
     padding: 0px;
@@ -87,19 +103,93 @@ mycss = "
     margin-right: 5px;
   }
 
+  /* TOOLTIP DESIGN */
+  .tooltip {
+    pointer-events: none;
+  }
+  .tooltip > .tooltip-inner {
+    pointer-events: none;
+    background-color: #2fa4e7;
+      color: #FFFFFF;
+      border: 1px solid #2fa4e790;
+    padding: 10px;
+    font-size: 14px;
+    text-align: left;
+    margin-left: 0;
+    max-width: 250px;
+  }
+  .tooltip > .arrow::before {
+    border-right-color: #2fa4e7;
+  }
+
+  /* GAUGE DESIGN */
+  .html-widget.gauge svg {
+    height: 100%;
+    width: 100%;
+    margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px;
+  }
+
+  #toolbar {
+    max-height: 100%;
+    position: relative;
+  }
+
   " %>%
   HTML()
 
+js = '$(function() {
+        $("[data-toggle=\'tooltip\']").tooltip({
+          html: true,
+          container: "body",
+          sanitize: false
+        });
+      });'
+#' @name tooltip()
+#' @description Write a short function to operate a tooltip
+tooltip = function(.title, ...){
+  htmltools::tags$span(
+    `data-toggle` = "tooltip", `data-placement` = "right",
+    title = .title, ...)
+}
 
+
+#add this file and collapsible nature should work.
 
 ui <- fluidPage(
   # Add head and styling
-  tags$head( tags$style( mycss )),
+  tags$head(
+    tags$style( mycss ),
+    tags$script(HTML(js))
+  ),
   # Add theme
   theme = bslib::bs_theme(version = 5, bootswatch = "cerulean"),
   shinyjs::useShinyjs(),
   # Add title
-  titlePanel("Calculator"),
+
+  titlePanel(
+    title = card(
+      style = css(
+        `text-align` = "left",
+        display = "flex",
+        `justify-content` = 'space-between',
+        `align-items` =  'baseline' ,
+        `border-color` = "transparent",
+        `margin-bottom` = "5px",
+        `margin-top` = "2px"),
+      column_wrap(
+        style = "margins: 0px; overflow: hidden;",
+        width = .50, style = css(grid_template_columns = "3fr 4fr"),
+        l = list(
+          card_title("CAT CALCULATOR",
+                     style = "font-size: 24px; text-align: left; margin-bottom: 0px; margin-top: 0px; padding: 0px; " ),
+          card_body("powered by MOVESLite @ Cornell University",
+                    style = "font-size: 14px; font-style: italic; text-align: right; vertical-align: bottom; overflow: hidden; border-color: transparent; margins: 0px; padding: 0px;")
+        )),
+      card_footer(style = "margin-top: 10px; text-align: left; font-size: 14px;", "Machine Learning Tools for Quick Emissions Reporting")
+    ),
+    windowTitle = "CAT Calculator"
+  ),
+
 
   # Layout Sidebar vs. Main Panel
   sidebarLayout(
@@ -114,26 +204,140 @@ ui <- fluidPage(
       selectInput(inputId = "pollutant", label = "POLLUTANT", choices = c("CO2e" = 98), selected = 98, width = "200px"),
       selectInput(inputId = "by", label = "AGGREGATION", choices = c("Overall" = 16), selected = 16, width = "200px"),
       selectInput(inputId = "startyear", label = "START YEAR", choices = 1990:2060,
-                  selected = stringr::str_sub(Sys.Date(), 1,4), width = "200px")
-
+                  selected = stringr::str_sub(Sys.Date(), 1,4), width = "200px"),
+      selectInput(inputId = "unit", label = "UNIT", choices = c("tons" = "t"), selected = "t", width = "200px")
     ),
 
     # In the main panel...
     mainPanel(
       width = 10,
       style = "max-width: 1200px; min-width: 300px; margin: 0 auto; padding-left: 0px; padding-top: 5px;",
-      # Add a toprow
-      column_wrap(
-        width = .25, gap = "2px", style = "padding-left: 0px; padding-right: 0px;",
-        l = list(
-          # ACCURACY STATISTIC ################################
-          ui_card(
-            card_header("Accuracy"),
-            card_body_fill(textOutput(outputId = "accuracy", container = tags$h5)),
-            style = "max-height: 100%;"),
-          card("About this Model"),
-          card("Box3"),
-          card("Box4") )  ),
+
+      # TOOLBAR ###################################
+      navs_tab_card(
+        id = "toolbar",
+        title = tags$b("MODEL"), selected = "metrics",
+        nav(value = "metrics", title = "Metrics", icon = icon("car"),
+            ## METRICS ###################################
+            column_wrap(
+              width = .25, gap = "2px",
+              style = css(
+                `padding-left` = "0px",
+                `padding-right` = "0px",
+                grid_template_columns = "1fr 1fr 1fr 1fr"),
+              l = list(
+                ### ACCURACY ####################################
+                ui_card(
+                  style = "height: 150px; max-height: 100%;",
+                  card_header(
+                    style = "background-color: #2fa4e7;",
+                    tags$b("Accuracy", style = "color: #FFFFFF;"),
+                    tooltip(
+                      .title = paste0(
+                        "<b>Measure: Adjusted R<sup>2</sup></b>",
+                        "<br>",
+                        "<i>Definition</i>: % of variation in emissions explained by the model. Adjusted for # of predictors. Higher is better.",
+                        "<br>",
+                        "<i>Range</i>: 0 - 100%."),
+                      icon("info-circle")  )  ),
+                  card_body_fill(
+                    #textOutput(outputId = "accuracy", container = tags$h5),
+                    gaugeOutput(outputId = "accuracygauge"),
+                    style = css(`max-height` = "100%", padding = "0px", `margin-right` = "0px", `margin-bottom` = "0px", `margin-top` = "0px", `margin-left` = "0px"))
+                ),
+
+                ### AVERAGE ERROR ####################################
+                ui_card(
+                  style = "height: 150px; max-height: 100%;",
+
+                  card_header(
+                    style = "background-color: #2fa4e7;",
+                    tags$b("Average Error", style = "color: #FFFFFF"),
+                    tooltip(
+                      .title = paste0(
+                        "<b>Measure: Sigma (RMSE)</b>",
+                        "<br>",
+                        "<i>Definition</i>: Average error in model predictions, in units of emissions. Lower is better. Even if large, if error is just a small percentage of the range, then it is small relative to overall range.",
+                        "<br>",
+                        "<i>Range</i>: 0 - Infinity."),
+                      icon("info-circle") ) ),
+                  card_body_fill(
+                    textOutput(outputId = "sigma", container = tags$h3),
+                    textOutput(outputId = "percentrange"),
+                    style = css(`max-height` = "100%", padding = "0px",
+                                `text-align` = 'center', `vertical-align` = "middle",
+                                `margin-right` = "0px", `margin-bottom` = "0px",
+                                `margin-top` = "0px", `margin-left` = "0px"))
+                ),
+                ### RANGE ####################################
+                ui_card(
+                  style = "height: 150px; max-height: 100%;",
+
+                  card_header(
+                    style = "background-color: #2fa4e7;",
+                    tags$b("Range", style = "color: #FFFFFF"),
+                    tooltip(
+                      .title = paste0(
+                        "<b>Measure: Range</b>",
+                        "<br>",
+                        "<i>Definition</i>: Distance from Lowest to Highest level of Emissions seen in this area, according to our baseline model data."),
+                      icon("info-circle")  ) ),
+                  card_body_fill(
+                    textOutput(outputId = "yrange", container = tags$h3),
+                    textOutput(outputId = "yinterval"),
+                    style = css(`max-height` = "100%", padding = "0px",
+                                `text-align` = 'center', `vertical-align` = "middle",
+                                `margin-right` = "0px", `margin-bottom` = "0px",
+                                `margin-top` = "0px", `margin-left` = "0px"))
+                ),
+                ### YEARS ####################################
+                ui_card(
+                  style = "height: 150px; max-height: 100%;",
+
+                  card_header(
+                    style = "background-color: #2fa4e7;",
+                    tags$b("Years", style = "color: #FFFFFF;"),
+                    tooltip(
+                      .title = paste0(
+                        "<b>Measure: Sample Size (N)</b>",
+                        "<br>",
+                        "<i>Definition</i>: Total number of years and range of years of MOVES data analyzed in model."),
+                      icon("info-circle")  ) ),
+                  card_body_fill(
+                    textOutput(outputId = "nyears", container = tags$h3),
+                    textOutput(outputId = "yearrange"),
+                    style = css(`max-height` = "100%", padding = "0px",
+                                `text-align` = 'center', `vertical-align` = "middle",
+                                `margin-right` = "0px", `margin-bottom` = "0px",
+                                `margin-top` = "0px", `margin-left` = "0px"))
+                )
+
+
+
+
+              )
+            )
+        ),
+        ## ABOUT ###################################
+        nav(value = "model", title = "About this Model", icon = icon("car"),
+            card_body_fill(
+              tags$ul(
+                tags$li("This equation shows the most accurate model of emissions over time in <b><i>your local area</b></i>, according to our algorithms." %>% HTML()),
+                tags$li("Our models are trained on estimates from the EPA's MOVES software, the gold standard in the US for emissions modeling."),
+                tags$li("MOVES analyses are highly precise, but computationally expensive. Our MOVESLite system delivers immediate estimates, with an acceptable margin of error, to aid scenario-building and decision-making."),
+                tags$li(
+                  tags$b("Model Equation"),
+                  tooltip(
+                    .title = paste0(
+                      "<b>Measure: Model Equation</b>",
+                      "<br>",
+                      "<i>Definition</i>: Best-fitting equation for estimating emissions based on local activity levels. Add your local activity levels below, and this model will predict the expected level of emissions."),
+                    icon("info-circle") ),
+                  uiOutput(outputId = "equation"))
+              )
+            )
+        )
+      ),
       # INPUT SETS ################################################
       fluidRow(
         div(id = "inputsets"),
@@ -149,20 +353,27 @@ ui <- fluidPage(
       # OUTPUT GRAPHICS ################################################
       fluidRow(
         # STATISTIC ###################################################
-        column(
-          width = 3, offset = 0,
-          ui_card(card_header("Average Change in Emissions"),
-               card_body_fill(textOutput(outputId = "stat", container = tags$h5)),
-                              style = "max-height: 100%;")
-        ),
-        # PLOT ###################################################
-        column(
-          width = 9, offset = 0,
-          #verbatimTextOutput("input_values"),
-          card(plotlyOutput("visual"))
+        column_wrap(
+          width = 0.5, fill = TRUE,
+          style = css(grid_template_columns = '1fr 3fr'),
+          l = list(
+            ui_card(
+              card_header(
+                style = "background-color: #2fa4e7;",
+                tags$b("Average Change in Emissions", style = "color: #FFFFFF;")),
+              card_body_fill(
+                textOutput(outputId = "stat", container = tags$h3),
+                " per year",
+                style = "text-align: center; vertical-align: middle; max-height: 100%;"
+              ),
+              style = "max-height: 100%;"),
+
+            # PLOT ###################################################
+            card(plotlyOutput("visual"))
+          )
+
         )
       )
-
     )
 
   )
@@ -170,10 +381,10 @@ ui <- fluidPage(
 
 
 
-
-
 server <- function(input, output, session) {
 
+  # Set the ggplot theme one time.
+  set_theme()
   # Load functions
   source("R/connect.R")
   source("R/query.R")
@@ -388,31 +599,134 @@ server <- function(input, output, session) {
   # GOODNESS OF FIT ###########################################################
   stats = reactive({
     req(model())
-    setcount = sets$count
-    if(setcount > 0){
-      stats = model() %>% broom::glance() %>%
-        # Extract quantities of interest
-        select(accuracy = r.squared, sigma, p_value = p.value, df, nobs) %>%
-        # Format them
-        mutate(accuracy = percent(accuracy, accuracy = 1, suffix = "%"),
-               sigma = number(sigma, accuracy = 1, scale_cut = cut_si(unit = "")),
-               p_value = round(p_value, 3),
-               p_value = if_else(p_value == 0, true = "p < 0.001", false = paste0("p = ", p_value)))
-    }else{
-      stats = tibble(accuracy = "", sigma = "",  p_value = "", df = "",nobs = "" )
-    }
+    stats = model() %>% broom::glance() %>%
+      # Extract quantities of interest
+      select(accuracy = adj.r.squared, sigma, p_value = p.value, df, nobs) %>%
+      # Format them
+      mutate(
+        # Get R2 as a number
+        accuracygauge = round(accuracy*100, 1),
+        p_value = round(p_value, 3),
+        p_value = if_else(p_value == 0, true = "p < 0.001", false = paste0("p = ", p_value)))
+
+    # Get year range
+    stats$year_lower = model()$model$year %>% min(na.rm = TRUE)
+    stats$year_upper = model()$model$year %>% max(na.rm = TRUE)
+    # Get range of outcome variable
+    stats$y_lower = model()$model$emissions %>% min(na.rm = TRUE)
+    stats$y_upper = model()$model$emissions %>% max(na.rm = TRUE)
+
+    stats = stats %>%
+      mutate(yearrange = paste0(year_lower, " - ", year_upper),
+             nyears = paste0(nobs, " years"),
+             # Get range
+             yrange = abs(y_upper - y_lower),
+             # Get percentage of range that sigma takes up
+             percentrange = sigma / yrange,
+             percentrange = percent(percentrange, accuracy = 0.1, suffix = "% of range"),
+             sigma = number(sigma, accuracy = 0.01, scale_cut = cut_si(unit = input$unit)) %>% paste0("±", .),
+
+             yrange = number(yrange, accuracy = 0.01, scale_cut = cut_si(unit = input$unit)),
+             y_lower = number(y_lower, accuracy = 0.01, scale_cut = cut_si(unit = input$unit)),
+             y_upper = number(y_upper, accuracy = 0.01, scale_cut = cut_si(unit = input$unit)),
+             yinterval = paste0(y_lower, " - ", y_upper),
+
+      )
+    return(stats)
   })
 
   # OUTPUT GOODNESS OF FIT ####################################################
-  output$accuracy = renderText({ stats()$accuracy }) %>% bindEvent({ model() })
+  #output$accuracy = renderText({ stats()$accuracy }) %>% bindEvent({ model() })
+  output$accuracygauge = renderGauge({
+    gauge(
+      value = stats()$accuracygauge,
+      min = 0, max = 100, symbol = "%",
+      sectors = gaugeSectors(
+        success = c(95, 100),
+        warning = c(90, 0.95),
+        danger = c(0, 90)
+      ), abbreviateDecimals = 1)
+  }) %>% bindEvent({model()})
+
+  output$sigma = renderText({ stats()$sigma })
+  output$percentrange = renderText({ stats()$percentrange })
+  output$yearrange = renderText({ stats()$yearrange })
+  output$nyears = renderText({ stats()$nyears })
+  output$yrange = renderText({ stats()$yrange })
+  output$yinterval = renderText({ stats()$yinterval })
+  # Example
+  # output$equation = renderUI({ withMathJax(helpText("Some math here $$\\alpha+\\beta$$")) })
+
+  output$equation = renderUI({
+    # This is the ibm color scale
+    ibm = list(
+      "blue" = "#648FFF",
+             "purple" = "#785EF0",
+             "red" = "#DC267F",
+             "orange" = "#FE6100",
+             "yellow" =  "#FFB000",
+             "grey" = "#373737")
+
+    # Labels for any possible version
+    v = tribble(
+      ~var,   ~label,   ~color,
+      # Basic Covariates
+      "year", "Year", ibm$grey,
+      # Fleet
+      "vehicles", "Vehicles", ibm$blue,
+      "vehicles:year", "Vehicles x Year", ibm$blue,
+      "poly(vehicles,2)", "Vehicles", ibm$blue,
+      "poly(vehicles,3)", "Vehicles", ibm$blue,
+      "poly(vehicles, 2)", "Vehicles", ibm$blue,
+      "poly(vehicles, 3)", "Vehicles", ibm$blue,
+
+      # Activity
+      "vmt",  "VMT", ibm$orange,
+      "vmt:year", "VMT x Year", ibm$orange,
+      "poly(vmt,2)",  "VMT", ibm$orange,
+      "poly(vmt,3)",  "VMT", ibm$orange,
+      "poly(vmt, 2)",  "VMT", ibm$orange,
+      "poly(vmt, 3)",  "VMT", ibm$orange,
+
+      "sourcehours", "Time Driven", ibm$orange,
+      "sourcehours:year", "Time Driven x Year", ibm$orange,
+      "poly(sourcehours,2)",  "VMT", ibm$orange,
+      "poly(sourcehours,3)",  "VMT", ibm$orange,
+      "poly(sourcehours, 2)",  "VMT", ibm$orange,
+      "poly(sourcehours, 3)",  "VMT", ibm$orange,
+
+      "starts", "Starts", ibm$orange,
+      "starts:year", "Starts x Year", ibm$orange,
+      "poly(starts,2)",  "Starts", ibm$orange,
+      "poly(starts,4)",  "Starts", ibm$orange,
+      "poly(starts, 2)",  "Starts", ibm$orange,
+      "poly(starts, 4)",  "Starts", ibm$orange,
+
+      # Outcome
+      "emissions", "Emissions", ibm$red)
+
+    # Gather appropriate labels; it will eject any that don't apply automatically.
+    var_names = set_names(v$label, v$var)
+    var_colors = set_names(v$color, v$var)
+
+    model() %>%
+      extract_eq(
+        use_coefs = TRUE, fix_signs = TRUE,
+        wrap = TRUE,
+        swap_var_names = var_names,
+        var_colors = var_colors,
+        coef_digits = 2) %>%
+      withMathJax()
+  })
+
 
 
   output$stat = renderText({
     setcount = sets$count;
     if(setcount > 0){
       stat =  ydata() %>% filter(type == "custom") %>% with(change) %>% mean(na.rm = TRUE) %>%
-        number(accuracy = 1, style_positive = "plus", style_negative = "minus", scale_cut = cut_si(unit = ""))
-    }else{ stat = "" }
+        number(accuracy = 0.1, style_positive = "plus", style_negative = "minus", scale_cut = cut_si(unit = input$unit))
+    }else{ stat = "..." }
     return(stat)
   })
 
@@ -490,12 +804,12 @@ server <- function(input, output, session) {
       customdata = reactive({ ydata() %>% filter(type == "custom") %>% arrange(year) %>% select(emissions, change) })
       # Let's generate a reactive value, containing all the inputs from that set.
       lapply(X = 1:nrow(customdata()), FUN = function(i){
-          # Get reactive vector of names
-          input_names = reactive({ names(input)[ stringr::str_detect(names(input), pattern = paste0("set_", i)) ] })
-          # Assign the output
-          output[[ paste0("set_", i, "-emissions") ]] <- renderText({ customdata()$emissions[i] }) %>% bindEvent(input, { input_names() })
-          output[[ paste0("set_", i, "-change") ]] <- renderText({ customdata()$change[i] }) %>% bindEvent(input, { input_names() })
-        })
+        # Get reactive vector of names
+        input_names = reactive({ names(input)[ stringr::str_detect(names(input), pattern = paste0("set_", i)) ] })
+        # Assign the output
+        output[[ paste0("set_", i, "-emissions") ]] <- renderText({ customdata()$emissions[i] }) %>% bindEvent(input, { input_names() })
+        output[[ paste0("set_", i, "-change") ]] <- renderText({ customdata()$change[i] }) %>% bindEvent(input, { input_names() })
+      })
 
     }
   }) %>% bindEvent({ydata()})
@@ -513,9 +827,10 @@ server <- function(input, output, session) {
 
     req(ydata())
 
+    .highlight_color = "#2fa4e7"
     .geoid_label = "Tompkins County"
     .pollutant_label = "CO2 Equivalent"
-    .pollutant_unit = "tons"
+    .pollutant_unit = switch(EXPR = input$unit, "t" = "tons")
     .pollutant_unit_abbr = stringr::str_sub(.pollutant_unit, 1, 1)
     .startyear = as.numeric(isolate({input$startyear}))
     #.startyear = 2023
@@ -588,29 +903,39 @@ server <- function(input, output, session) {
     gg = ggplot() +
       geom_line(
         data = benchmark,
-        mapping = aes(x = year, y = emissions, group = type, color = type, text = text)) %>%
-      suppressWarnings() +
-      geom_point(
-        data = benchmark,
-        mapping = aes(x = year, y= emissions, color = type, text = text), size = 1.25) %>%
+        mapping = aes(x = year, y = emissions, group = type, color = type, text = text),
+        linewidth = 1.5) %>%
       suppressWarnings() +
       geom_line(
         data = custom,
-        mapping = aes(x = year, y= emissions, group = type, color = type, text = text)) %>%
-      suppressWarnings() +
-      geom_point(
-        data = custom,
-        mapping = aes(x = year, y= emissions, color = type, text = text), size = 1.25)  %>%
+        mapping = aes(x = year, y= emissions, group = type, color = type, text = text),
+        linewidth = 1.5) %>%
       suppressWarnings() +
       geom_linerange(
         data = gaps,
-        mapping = aes(x = year, ymin = ymin, ymax = ymax, text = text)) %>%
+        mapping = aes(x = year, ymin = ymin, ymax = ymax, text = text),
+        linewidth = 1.15) %>%
       suppressWarnings() +
-
+      geom_point(
+        data = benchmark,
+        mapping = aes(x = year, y= emissions, color = type, text = text),
+        shape = 21, size = 3, fill = "white", stroke = 0.75) %>%
+      suppressWarnings() +
+      geom_point(
+        data = custom,
+        mapping = aes(x = year, y= emissions, color = type, text = text),
+        shape = 21, size = 3, fill = "white", stroke = 0.75)  %>%
+      suppressWarnings() +
       scale_color_manual(
         breaks = c("Benchmark" = "benchmark", "Your Scenario" = "custom"),
         name = "Scenario",
-        values = c("grey", "red")) +
+        guide = "none",
+        values = c("grey", .highlight_color)) +
+      # scale_fill_manual(
+      #   breaks = c("Benchmark" = "benchmark", "Your Scenario" = "custom"),
+      #   name = "Scenario",
+      #   guide = "none",
+      #   values = c("grey", .highlight_color)) +
       scale_y_continuous(labels = scales::label_number(scale_cut = cut_si(.pollutant_unit_abbr))) +
       labs(y = paste0("Estimated Emissions (", .pollutant_unit, " of ", .pollutant_label, ")"),
            x = "Year",
@@ -623,17 +948,17 @@ server <- function(input, output, session) {
     pp = pp %>%
       layout(hoverlabel = list(align = "left")) %>%
       config(displayModeBar = FALSE, displaylogo = FALSE)
-      # config(modeBarButtonsToRemove = list(
-      #   "sendDataToCloud", "zoom2d", "pan2d", "select2d", "lasso2d",
-      #   "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d",
-      #   "hoverClosestCartesian", "hoverCompareCartesian",
-      #   "zoom3d", "pan3d", "orbitRotation", "tableRotation",
-      #   "handleDrag3d", "resetCameraDefault3d", "resetCameraLastSave3d",
-      #   "hoverClosest3d", "zoomInGeo", "zoomOutGeo", "resetGeo",
-      #   "hoverClosestGeo", "hoverClosestGl2d", "hoverClosestPie",
-      #   "toggleHover", "resetViews", "toImage", "toggleSpikelines",
-      #   "resetViewMapbox")
-      # )
+    # config(modeBarButtonsToRemove = list(
+    #   "sendDataToCloud", "zoom2d", "pan2d", "select2d", "lasso2d",
+    #   "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d",
+    #   "hoverClosestCartesian", "hoverCompareCartesian",
+    #   "zoom3d", "pan3d", "orbitRotation", "tableRotation",
+    #   "handleDrag3d", "resetCameraDefault3d", "resetCameraLastSave3d",
+    #   "hoverClosest3d", "zoomInGeo", "zoomOutGeo", "resetGeo",
+    #   "hoverClosestGeo", "hoverClosestGl2d", "hoverClosestPie",
+    #   "toggleHover", "resetViews", "toImage", "toggleSpikelines",
+    #   "resetViewMapbox")
+    # )
 
 
     return(pp)
