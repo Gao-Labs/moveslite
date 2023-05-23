@@ -6,7 +6,7 @@ require(gert)
 # Add paths of files you want to **commit** to Github
 gert::git_add(dir(all.files = TRUE))
 # Commit all those changed files
-gert::git_commit_all(message = "updated ui for app.R")
+gert::git_commit_all(message = "relocated app to other repo")
 # Push those files to Github
 gert::git_push()
 
