@@ -1,6 +1,9 @@
 # Example workflow
-
-
+library(DBI)
+library(dplyr)
+library(readr)
+library(RMariaDB)
+library(xml2)
 # setup.R
 
 # Run this script to get you setup for the first time.
@@ -18,16 +21,16 @@ db = dbConnect(RSQLite::SQLite(), "z/db.sqlite")
 # Test table (Tompkins County)
 t = "d36109"
 
-db %>% 
+db %>%
   tbl(t) %>%
   glimpse()
 
 # by = 8 --> aggregated by sourcetype
-db %>% 
+dat = db %>%
   tbl(t) %>%
   head(1)
 
-dat = db %>% 
+dat = db %>%
   tbl(t) %>%
   # Just aggregated by sourcetype, just buses
   filter(by == 8 & sourcetype == 42) %>%
@@ -38,21 +41,33 @@ dat = db %>%
 library(ggplot2)
 library(broom)
 
-dat %>%
-  ggplot(mapping = aes(x = vmt, y = emissions)) + 
-  geom_point()
+library(scales)
+#install.packages("ggpmisc")
 
-m = dat %>% lm(formula = emissions ~ poly(vmt,4) )
-  
+library(ggpmisc)
+
+dat %>%
+  ggplot(mapping = aes(x = log(vmt), y = emissions)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  xlab("Vehicle Miles Traveled (VMT) in Miles") +
+  ylab("Emissions in US Tons") +
+  scale_x_continuous(labels = comma) +
+  scale_y_continuous(labels = comma)
+
+m = dat %>% lm(formula = emissions ~ log(vmt) )
+
+summary(m)
+
 m %>% glance()
 # Beta coefficient which the rate of emissions per VMT
 
 # Take roads --> vmt --> predict --> emissions
-predict(m, tibble(vmt = 3))
+predict(m, tibble(vmt = 1300000))
 
 # What is our goal? ######################
 # If I'm a user and I want to know about Bus Emissions in Tompkins County (eg. Yan!)
-# Right now, I need to run MOVES --> and it's a process! 
+# Right now, I need to run MOVES --> and it's a process!
 # MOVES - It requires 40 input tables.
 # catr - requires just 1 or more
 # movesai - requires 1 number.
@@ -80,7 +95,7 @@ predict(m, tibble(vmt = 3))
 # D. Make an example workflow that can actually run Yan's project needs.
 
 
-
+#'@
 
 
 

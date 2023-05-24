@@ -59,6 +59,8 @@ qis = project(m = model, data = default, .newx = .newx,
 # Look at the custom prediction versus the benchmark
 qis %>% filter(type %in% c("custom", "benchmark"))
 
+library(ggplot2)
+
 qis %>% filter(type %in% c("custom", "benchmark")) %>%
   ggplot(mapping = aes(x = year, y = emissions, color = type, group = 1)) +
     geom_point(mapping = aes(color = type)) +
