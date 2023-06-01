@@ -64,36 +64,45 @@ fieldtypes = c(
 tables = conn %>% dbListTables()
 
 # If SQLite table 'runs' is NOT yet initialized
-if(!"runs" %in% tables){
+if(!"samples" %in% tables){
   # Make a template entry
   template = diagnose_many(.geoid = "36109", .pollutant = 98, .by = 8, .type = 42, .formulas = list("1" = emissions ~ vmt)) %>%
     mutate(run_id = 1, set_id = 1) %>%
     # Arrange any columns that may exist in this order, if they exist
-    select(any_of(c("run_id", "geoid", "set_id", "pollutant", "by", "type", "formula_id", "formula", "adjr", "sigma", "df.residual"))) %>%
+    select(any_of(c("run_id", "geoid",  "set_id", "pollutant", "by", "type", "formula_id", "formula", "adjr", "sigma", "df.residual"))) %>%
     slice(0)
   # Initialize the table
-  conn %>% dbWriteTable(name = "runs", value = template, field.types = fieldtypes)
+  conn %>% dbWriteTable(name = "samples", value = template, field.types = fieldtypes)
 }
 
 # Check the run_id last completed
-latest = conn %>% tbl("runs") %>% summarize(run_id = max(run_id, na.rm = TRUE)) %>% collect() %>% with(run_id)
+latest = conn %>% tbl("samples") %>% summarize(run_id = max(run_id, na.rm = TRUE)) %>% collect() %>% with(run_id)
 latest = if(is.na(latest)){ 0 }else{ latest }
 
 # Disconnect
 dbDisconnect(conn)
 
-runs = read_rds("diagnostics/runs.rds") %>%
+runs = read_rds("diagnostics/runs_sample.rds") %>%
   # Filter to just NEW runs we have not yet written to the database.
   filter(run_id > !!latest)
 
 # Get total runs left
 n = nrow(runs)
 
-# Run a loop for as many rows as are currently in runs
-for(i in 1:n){
+# Setup parallel processing
+library(furrr)
+library(future)
+# Get number of available cores
+ncores = availableCores() - 2
+# Initiate parallel processing
+plan(multicore, workers = ncores)
+
+# Generate function for looping, for the ith row in 'runs'
+f = function(i, runs, n){
   # Run function
   output = diagnose_many(.geoid = runs$geoid[i], .pollutant = runs$pollutant[i],
-                         .by = runs$by[i], .type = runs$type[i], .formulas = formulas) %>%
+                         .by = runs$by[i], .type = runs$type[i],
+                         .formulas = formulas) %>%
     # Receive a run_id
     mutate(run_id = runs$run_id[i], set_id = runs$set_id[i]) %>%
     # Arrange any columns that may exist in this order, if they exist
@@ -103,7 +112,7 @@ for(i in 1:n){
     # Connect to database
     conn = dbConnect(drv = RSQLite::SQLite(), "diagnostics/diagnostics.sqlite")
     # Write that output to database
-    conn %>% dbWriteTable(name = "runs", value = output, append = TRUE, overwrite = FALSE)
+    conn %>% dbWriteTable(name = "samples", value = output, append = TRUE, overwrite = FALSE)
     # Disconnect from database
     dbDisconnect(conn); remove(conn)
   }
@@ -113,28 +122,19 @@ for(i in 1:n){
   print(paste0("--- done: ", runs$run_id[i], "   ", paste0(round(runs$run_id[i] / nrow(runs)*100, 2), "%")));
 
   # Clear cache
-  gc();
+  gc(verbose = FALSE);
+
 }
-# runs %>%
-#   split(.$run_id) %>%
-#   purrr::walk(.f = ~{
-#     # Run function
-#     output = diagnose_many(.geoid = .x$geoid, .pollutant = .x$pollutant, .by = .x$by, .type = .x$type, .formulas = formulas) %>%
-#       # Receive a run_id
-#       mutate(run_id = .x$run_id, set_id = .x$set_id) %>%
-#       # Arrange any columns that may exist in this order, if they exist
-#       select(any_of(c("run_id", "geoid", "set_id", "pollutant", "by", "type", "formula_id", "formula", "adjr", "sigma", "df.residual")))
-#     # Connect to database
-#     conn = dbConnect(drv = RSQLite::SQLite(), "diagnostics/diagnostics.sqlite")
-#     # Write that output to database
-#     conn %>% dbWriteTable(name = "runs", value = output, append = TRUE, overwrite = FALSE)
-#     # Disconnect from database
-#     dbDisconnect(conn); remove(conn)
-#     # Print Completion Message
-#     print(paste0("--- done: ", .x$run_id, "   ", paste0(round(.x$run_id / nrow(runs)*100, 2), "%")));
-#   }, .progress = TRUE)
+
+
+future_map(.x = 1:n, ~f(i = .x, runs = runs, n = n),
+           .progress = TRUE, .options = furrr_options(seed = 12345))
+
+# conn = dbConnect(drv = RSQLite::SQLite(), "diagnostics/diagnostics.sqlite")
+# conn %>% tbl("samples")
+# dbDisconnect(conn)
+
+plan(sequential)
 
 # Clear Environment and Cache
 rm(list = ls()); gc()
-
-

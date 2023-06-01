@@ -48,23 +48,9 @@ Restricted",roadtype
 5,Ethanol (E-85),Ethanol,fueltype
 9,Electricity,Electricity,fueltype
 98,CO2 Equivalent,CO2e,pollutant
-91,Total Energy Consumption,Energy Consumption,pollutant
-1,Total Gaseous Hydrocarbons (TGH),TGH,pollutant
-5,Methane (CH4),CH4,pollutant
-90,Atmospheric CO2,Atmospheric CO2,pollutant
-31,Sulfur Dioxides (SO2),SO2,pollutant
-3,Oxides of Nitrogen (NOx),NOx,pollutant
+31,Sulfur Dioxide (SO2),SO2,pollutant
 6,Nitrous Oxide (N20),N20,pollutant
 2,Carbon Monoxide (CO),CO,pollutant
 87,Volatile Organic Compounds,VOC,pollutant
-79,Non-Methane Hydrocarbons,NMH,pollutant
 110,Primary Exhaust PM2.5 - Total,PM2.5,pollutant
-117,Primary PM2.5 - Tirewear Particulate,PM2.5 - Tirewear,pollutant
-116,Primary PM2.5 - Brakeware Particulate,PM2.5 - Brakewear,pollutant
-112,Elemental Carbon,Elemental Carbon,pollutant
-115,Sulfate Particulate,Suflate Particulate,pollutant
-118,Composite - NonECPM,Composite - NonECPM,pollutant
-119,H20 (aerosol),H20,pollutant
 100,Primary Exhaust PM10 - Total,PM10,pollutant
-106,Primary PM10 - Breakware Particulate,PM10 - Breakware,pollutant
-107,Primary PM10 - Tirewear Particulate,PM10 - Tirewear,pollutant

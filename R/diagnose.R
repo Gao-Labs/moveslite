@@ -22,7 +22,7 @@ diagnose <- function(.data, .formula, .pollutant, .by, .geoid) {
       # Label by geoid, pollutant, and by
       mutate(geoid = .geoid, pollutant = .pollutant, by = .by) %>%
       # Grab these diagnostics and columns
-      select(geoid,by,pollutant,adjr = adj.r.squared, sigma, df.residual, formula)
+      select(geoid,by,pollutant, adjr = adj.r.squared, sigma, df.residual, formula)
   }
 
   # Create an error-proof function...

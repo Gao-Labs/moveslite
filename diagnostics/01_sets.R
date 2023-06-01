@@ -65,29 +65,31 @@ bind_rows(
   tribble(
     ~id, ~term, ~label,
     "98", "CO2 Equivalent", "CO2e",
-    "91", "Total Energy Consumption", "Energy Consumption",
-    "1", "Total Gaseous Hydrocarbons (TGH)", "TGH",
-    "5", "Methane (CH4)", "CH4",
-    "90", "Atmospheric CO2", "Atmospheric CO2",
-    "31", "Sulfur Dioxides (SO2)", "SO2",
-    "3", "Oxides of Nitrogen (NOx)", "NOx",
+    #"91", "Total Energy Consumption", "Energy Consumption",
+    #"1", "Total Gaseous Hydrocarbons (TGH)", "TGH",
+    #"5", "Methane (CH4)", "CH4",
+    #"90", "Atmospheric CO2", "Atmospheric CO2",
+    "31", "Sulfur Dioxide (SO2)", "SO2",
+    #"3", "Oxides of Nitrogen (NOx)", "NOx",
     "6", "Nitrous Oxide (N20)", "N20",
     "2", "Carbon Monoxide (CO)", "CO",
     "87", "Volatile Organic Compounds", "VOC",
-    "79", "Non-Methane Hydrocarbons", "NMH",
+    #"79", "Non-Methane Hydrocarbons", "NMH",
     "110", "Primary Exhaust PM2.5 - Total", "PM2.5",
-    "117", "Primary PM2.5 - Tirewear Particulate", "PM2.5 - Tirewear",
-    "116", "Primary PM2.5 - Brakeware Particulate", "PM2.5 - Brakewear",
-    "112", "Elemental Carbon", "Elemental Carbon",
-    "115", "Sulfate Particulate", "Suflate Particulate",
-    "118", "Composite - NonECPM", "Composite - NonECPM",
-    "119", "H20 (aerosol)", "H20",
+    #"117", "Primary PM2.5 - Tirewear Particulate", "PM2.5 - Tirewear",
+    #"116", "Primary PM2.5 - Brakeware Particulate", "PM2.5 - Brakewear",
+    #"112", "Elemental Carbon", "Elemental Carbon",
+    #"115", "Sulfate Particulate", "Suflate Particulate",
+    #"118", "Composite - NonECPM", "Composite - NonECPM",
+    #"119", "H20 (aerosol)", "H20",
     "100", "Primary Exhaust PM10 - Total", "PM10",
-    "106", "Primary PM10 - Breakware Particulate", "PM10 - Breakware",
-    "107", "Primary PM10 - Tirewear Particulate", "PM10 - Tirewear") %>%
+    #"106", "Primary PM10 - Breakware Particulate", "PM10 - Breakware",
+    #"107", "Primary PM10 - Tirewear Particulate", "PM10 - Tirewear"
+    ) %>%
     mutate(type = "pollutant")
 ) %>%
   write_csv("diagnostics/keywords.csv")
+
 
 keywords <- read_csv("diagnostics/keywords.csv")
 
@@ -113,7 +115,7 @@ source("R/connect.R")
 db = connect("data")
 # Get just the full vector of table names that are counties (5 digits)
 alltables = tibble(tables = db %>% dbListTables()) %>%
-  filter(stringr::str_detect(tables, pattern = "d[0-9]{5}|d[0-9]{2}")) %>%
+  filter(stringr::str_detect(tables, pattern = "d[0-9]{5}")) %>%
   with(tables)
 allgeoids = alltables %>% stringr::str_remove("d")
 dbDisconnect(db)
@@ -127,3 +129,22 @@ read_csv("diagnostics/sets.csv") %>%
 
 # Clear environment and cache
 rm(list = ls()); gc()
+
+divs = tigris::fips_codes %>% select(state_code, state) %>% distinct() %>%
+  left_join(by = c("state"), y= tibble(state = state.abb, division = state.division)) %>%
+  filter(!is.na(division))
+
+# Let's take a stratified random sample...
+read_rds("diagnostics/runs.rds") %>%
+  mutate(state_code = str_sub(geoid, 1,2)) %>%
+  left_join(by = c("state_code"), y = divs) %>%
+  group_by(set_id, pollutant, type, by, division) %>%
+  reframe(geoid = sample(geoid, size = if_else(length(geoid) < 10, n(), 10), replace = FALSE)) %>%
+  ungroup() %>%
+  mutate(run_id = 1:n()) %>%
+  saveRDS("diagnostics/runs_sample.rds")
+
+# For each set, we took a random sample of 10 cells from within each census division.
+rm(list = ls())
+
+

@@ -44,7 +44,7 @@ diagnose_many = function(.geoid = "36109", .pollutant = 98, .by = 8, .type = 42,
   # Generate a table from your list of formulas
   tab = .formulas %>%
     # Apply this function many times
-    map(.f = ~diagnose(.data = data, .pollutant = .pollutant, .by = .by, .geoid = .geoid, .formula = .x), .id = "formula_id") %>%
+    map(.f = ~diagnose(.data = data, .pollutant = .pollutant, .by = .by, .geoid = .geoid,  .formula = .x), .id = "formula_id") %>%
     # Keep only results where at least 1 adjr value is not NA.
     keep(~sum(!is.na(.x$adjr)) > 0)
 
