@@ -1,6 +1,5 @@
 # Example workflow
 
-
 # setup.R
 
 # Run this script to get you setup for the first time.
@@ -18,16 +17,16 @@ db = dbConnect(RSQLite::SQLite(), "z/db.sqlite")
 # Test table (Tompkins County)
 t = "d36109"
 
-db %>% 
+db %>%
   tbl(t) %>%
   glimpse()
 
 # by = 8 --> aggregated by sourcetype
-db %>% 
+db %>%
   tbl(t) %>%
   head(1)
 
-dat = db %>% 
+dat = db %>%
   tbl(t) %>%
   # Just aggregated by sourcetype, just buses
   filter(by == 8 & sourcetype == 42) %>%
@@ -39,7 +38,7 @@ library(ggplot2)
 library(broom)
 
 dat %>%
-  ggplot(mapping = aes(x = vmt, y = emissions)) + 
+  ggplot(mapping = aes(x = vmt, y = emissions)) +
   geom_point()
 
 m = dat %>% lm(formula = emissions ~ poly(vmt,4) )
@@ -52,7 +51,7 @@ predict(m, tibble(vmt = 3))
 
 # What is our goal? ######################
 # If I'm a user and I want to know about Bus Emissions in Tompkins County (eg. Yan!)
-# Right now, I need to run MOVES --> and it's a process! 
+# Right now, I need to run MOVES --> and it's a process!
 # MOVES - It requires 40 input tables.
 # catr - requires just 1 or more
 # movesai - requires 1 number.

@@ -32,6 +32,24 @@ db %>% dbListTables()
 # by = 14 = Fueltype
 # by = 15 = Roadtype
 
+
+d = db %>%
+  tbl("d36109") %>%
+  filter(by == 8, pollutant == 98) %>%
+  select(year, geoid, emissions, vehicles) %>%
+  collect()
+
+
+d
+
+
+
+
+
+
+
+
+
 db %>%
   tbl("d36109") %>%
   count()
