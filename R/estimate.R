@@ -32,8 +32,11 @@ estimate = function(data, .vars = c("vmt", "vehicles", "starts", "sourcehours", 
   #   "4" = {  m = data %>% lm(formula = emissions ~ vmt + year) }
   #   )
 
+  # Use this best fitting model
+  formula = emissions ~ poly(vmt, 2) + poly(vehicles,2) + poly(sourcehours, 2) + poly(starts,2) + year
+
   # Compute the model
-  m = data %>% lm(formula = emissions ~ poly(vmt, 3) + vehicles + starts + sourcehours + year)
+  m = data %>% lm(formula = formula)
 
   # Return model.
   return(m)

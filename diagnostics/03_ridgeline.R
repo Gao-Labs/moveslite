@@ -134,6 +134,7 @@ stat = d %>%
         "&beta;<sub>8</sub>starts"
       ) %>% paste0(collapse = " + ")
   )) %>%
+  mutate(formula = paste0("Model ", formula_id, ": y&#770; ~ ", formula)) %>%
   arrange(median) %>%
   mutate(rank = 1:n()) %>%
   # Check if there's a boost needed
@@ -175,7 +176,7 @@ gg = ggplot() +
   geom_line(data = curve %>% filter(!is.na(y)), mapping = aes(x = x, y = y*100 + rank, group = formula_id), color = "grey", linewidth = 1) +
   # Plot Median Text
   shadowtext::geom_shadowtext(
-    data = stat, mapping = aes(x = median, y = rank + 0.5, label = label),
+    data = stat, mapping = aes(x = median, y = rank + 0.7, label = label),
     bg.r = 0.3, bg.color = "white", color = "black") +
   scale_x_continuous(expand = expansion(c(0,0.05))) +
   theme_void(base_size = 14) +
