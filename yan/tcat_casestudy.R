@@ -74,13 +74,14 @@ db = connect("data")
 default = query(.db = db, .table = .table, .filters = .filters, .vars = .vars)
 
 default <- default %>%
-  filter((sourcetype %in% c(41, 42)))
+  filter((sourcetype %in% c(42)))
 
 default <- default %>%
   group_by(year) %>%
   summarize_if(is.double, sum)
 
-
+vmt = total_mile[1]*262 + total_mile[2]*52 + total_mile[3]*52
+sourcehours = total_hour[1]*262 + total_hour[2]*52 + total_hour[3]*52
 
 dbDisconnect(db); remove(db)
 
@@ -93,29 +94,24 @@ tcat_2020 <- data.frame(
 )
 
 # Estimate the model
+#############################################################################################
 model = estimate(data = default, .vars = .vars)
 
+summary(model)
 # View its quality of fit
 model %>% glance()
 
 # Suppose we had some information about 1 or more variables for a custom scenario year
-.newx = list(year = 2020,
-             vmt = 1527484,
+.newx1 = list(vmt = 700000)
+
+.newx2 = list(year = 2020,
+             vmt = 3037774,
              sourcehours = 85219.7,
              vehicles = 102.2,
              starts = 175813.0)
-
-.newx = list(year = 2020,
-             vmt = 3037773,
-             sourcehours = 85219.7,
-             vehicles = 102.2,
-             starts = 175813.0)
-
-predicted_values <- predict(model, newdata = .newx)
-
 
 # Quantities of interest
-qis = project(m = model, data = default, .newx = .newx,
+qis = project(m = model, data = default, .newx = .newx1,
               .cats = "year", .exclude = "geoid", .context = TRUE)
 
 # Look at the custom prediction versus the benchmark
