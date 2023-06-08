@@ -3,6 +3,7 @@
 #' @description Script to help merge commits from one branch to another, when needed.
 #'
 
+system("git checkout yan")
 
 system("git checkout tim")
 
