@@ -4,15 +4,11 @@
 #'
 
 system("git checkout yan")
+system("git pull")
 
 system("git checkout tim")
+system("git pull")
 
-system("git merge yan -- R/merge.R")
 
-  "R/project.R",
-  "R/convert.R",
-  "R/find_transformation.R",
-  "data/transformations.rda",
-  "data/make_data.R",
-  sep = " "))
+
 
