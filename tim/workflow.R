@@ -15,10 +15,11 @@ source("R/setx.R")       # setx() - create newdata from default data to feed to 
 source("R/estimate.R")   # estimate() a model of the default data
 source("R/project.R")    # generate predictions with project()
 
-#' Our goal is to extend their functionality.
+library(DBI)
+library(RMySQL)
 
 #' Here's an example of their usage.
-
+dbDisconnect(db)
 # Connect to the 'data' database (tenatively your z/db.sqlite file)
 db = connect("data")
 
@@ -41,11 +42,6 @@ d = db %>%
 
 
 d
-
-
-
-
-
 
 
 

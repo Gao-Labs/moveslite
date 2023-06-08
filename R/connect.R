@@ -12,15 +12,33 @@ connect = function(.type = "data"){
 
     "data" = {
       # On Tim's computer:
-      path = "C:/Users/tmf77/OneDrive - Cornell University/Documents/rstudio/cat_static/db/data.sqlite"
-      # On Repository computers:
+      conn = dbConnect(
+        drv = RMySQL::MySQL(),
+        username = Sys.getenv("CATSERVER_USERNAME"),
+        password = Sys.getenv("CATSERVER_PASSWORD"),
+        host = Sys.getenv("CATSERVER_HOST"),
+        port = Sys.getenv("CATSERVER_PORT"),
+        dbname = "granddata")
+      # On Tim's computer:
+      # path = "C:/Users/tmf77/OneDrive - Cornell University/Documents/rstudio/cat_static/db/data.sqlite"
+      # On Yan's computer:
       # path = "z/db.sqlite"
-      conn = dbConnect(RSQLite::SQLite(), path)
+      # On Repository computers:
+      # path = "z/data.sqlite"
+      # conn = dbConnect(RSQLite::SQLite(), path)
     },
 
     "cov" = {
-      path =  "z/cov.sqlite"
-      conn = dbConnect(RSQLite::SQLite(), path)
+      #path =  "z/cov.sqlite"
+      #conn = dbConnect(RSQLite::SQLite(), path)
+      # On Tim's computer:
+      conn = dbConnect(
+        drv = RMySQL::MySQL(),
+        username = Sys.getenv("CATSERVER_USERNAME"),
+        password = Sys.getenv("CATSERVER_PASSWORD"),
+        host = Sys.getenv("CATSERVER_HOST"),
+        port = Sys.getenv("CATSERVER_PORT"),
+        dbname = "cov")
     }
   )
   return(conn)
