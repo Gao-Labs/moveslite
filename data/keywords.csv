@@ -1,0 +1,56 @@
+id,term,label,type
+11,Motorcycle,"Car/
+Bike",sourcetype
+21,Passenger Car,"Car/
+Bike",sourcetype
+31,Passenger Truck,"Light
+Truck",sourcetype
+32,Light Commercial Truck,"Light
+Truck",sourcetype
+41,Other Buses,Bus,sourcetype
+42,Transit Bus,Bus,sourcetype
+43,School Bus,Bus,sourcetype
+51,Refuse Truck,"Heavy
+Truck",sourcetype
+52,Single Unit Short-haul Truck,"Heavy
+Truck",sourcetype
+53,Single Unit Long-haul Truck,"Heavy
+Truck",sourcetype
+54,Motor Home,"Heavy
+Truck",sourcetype
+61,Combination Short-haul Truck,"Combo
+Truck",sourcetype
+62,Combination Long-haul Truck,"Combo
+Truck",sourcetype
+10,MC,MC,regclass
+20,LDV,LDV,regclass
+30,LDT,LDT,regclass
+40,LHD2b3,LHD2b3,regclass
+41,LHD34,LHD34,regclass
+42,LHD45,LHD45,regclass
+46,MHD67,MHD67,regclass
+47,HHD8,HHD8,regclass
+48,Urban Bus,Urban Bus,regclass
+49,Glider,Glider,regclass
+5,Urban Unrestricted Access,"Urban
+Unrestricted",roadtype
+4,Urban Restricted Access,"Urban
+Restricted",roadtype
+3,Rural Unrestricted Access,"Rural
+Unrestricted",roadtype
+2,Rural Restricted Access,"Rural
+Restricted",roadtype
+1,Off-Network,Off-Network,roadtype
+1,Gasoline,Gas,fueltype
+2,Diesel Fuel,Diesel,fueltype
+3,Compressed Natural Gas (CNG),CNG,fueltype
+4,Liquefied Petroleum Gas (LNG),LNG,fueltype
+5,Ethanol (E-85),Ethanol,fueltype
+9,Electricity,Electricity,fueltype
+98,CO2 Equivalent,CO2e,pollutant
+31,Sulfur Dioxide (SO2),SO2,pollutant
+6,Nitrous Oxide (N20),N20,pollutant
+2,Carbon Monoxide (CO),CO,pollutant
+87,Volatile Organic Compounds,VOC,pollutant
+110,Primary Exhaust PM2.5 - Total,PM2.5,pollutant
+100,Primary Exhaust PM10 - Total,PM10,pollutant
