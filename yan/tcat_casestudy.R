@@ -8,19 +8,24 @@ X2020_average <- read_excel("C:/Users/Yan/Desktop/2020_average.xls")
 
 library(dplyr)
 
+# change column name
 colnames(X2020_average) <- c("Day", "Route", "Year", "Date", "Average_mile", "Average_minutes", "Daily_Trips", "MPH", "Route Number")
 
+# subset information that are needed
 trip_info_2020 <- X2020_average[c("Day", "Route", "Year", "Average_mile", "Average_minutes", "Daily_Trips", "Date")]
 
+# change minutes to hours, calculate total hours and miles by using average * number
 trip_info_2020 <- trip_info_2020 %>%
   mutate(total_hours = (Average_minutes * Daily_Trips)/60,
          total_miles = Average_mile * Daily_Trips)
 
+# calculate the average
 route_info <- trip_info_2020 %>%
   group_by(Day, Route) %>%
   summarize(total_hours = mean(total_hours),
           total_miles = mean(total_miles))
 
+# calculate the information of each day
 days <- c("Wkdy", "Sun", "Sat")
 
 # Initialize an empty vector to store the total miles for each day
