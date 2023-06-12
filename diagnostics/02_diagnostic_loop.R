@@ -25,22 +25,66 @@ source("R/diagnose.R")
 source("R/diagnose_many.R")
 
 #' @note List of formulas we have theoretical and empirical reasons to expect will perform extremely well.
-formulas <- list(
-  "1" =  emissions ~ poly(vmt, 2) + poly(vehicles,2) + poly(sourcehours, 2) + poly(starts,2) + year,
-  "2"  =  emissions ~ poly(vmt, 2) + vehicles + poly(sourcehours, 2) + starts + year,
-  "3"  =  emissions ~ year + vmt + sourcehours + vehicles + starts +
-    year*vmt + year*sourcehours + vmt*sourcehours,
-  "4"  =  emissions ~ poly(vmt, 2) + vehicles + poly(sourcehours,2) + starts + year +
-    year*vmt + year*sourcehours + vmt*sourcehours,
-  "5"  =  emissions ~ poly(vmt, 2) + poly(vehicles, 2) + poly(sourcehours, 2) + + starts + year,
-  "6"  =  emissions ~ poly(vmt, 2) + poly(vehicles,2) + sourcehours + poly(starts, 2) + year,
-  "7"  =  emissions ~ poly(vmt, 2) + vehicles + poly(sourcehours, 2) + poly(starts, 2) + year,
-  "8"  =  emissions ~ vmt + poly(vehicles, 2) + poly(sourcehours, 2) + poly(starts, 2) + year,
-  "9"  =  emissions ~ sqrt(vmt) + sqrt(vehicles) + sqrt(sourcehours) + sqrt(starts) + year,
-  "10" =  emissions ~ poly(vmt, 3) + year + vmt*year
-)
+# formulas <- list(
+#   "1" =  emissions ~ poly(vmt, 2) + poly(vehicles,2) + poly(sourcehours, 2) + poly(starts,2) + year,
+#   "2"  =  emissions ~ poly(vmt, 2) + vehicles + poly(sourcehours, 2) + starts + year,
+#   "3"  =  emissions ~ year + vmt + sourcehours + vehicles + starts +
+#     year*vmt + year*sourcehours + vmt*sourcehours,
+#   "4"  =  emissions ~ poly(vmt, 2) + vehicles + poly(sourcehours,2) + starts + year +
+#     year*vmt + year*sourcehours + vmt*sourcehours,
+#   "5"  =  emissions ~ poly(vmt, 2) + poly(vehicles, 2) + poly(sourcehours, 2) + + starts + year,
+#   "6"  =  emissions ~ poly(vmt, 2) + poly(vehicles,2) + sourcehours + poly(starts, 2) + year,
+#   "7"  =  emissions ~ poly(vmt, 2) + vehicles + poly(sourcehours, 2) + poly(starts, 2) + year,
+#   "8"  =  emissions ~ vmt + poly(vehicles, 2) + poly(sourcehours, 2) + poly(starts, 2) + year,
+#   "9"  =  emissions ~ sqrt(vmt) + sqrt(vehicles) + sqrt(sourcehours) + sqrt(starts) + year,
+#   "10" =  emissions ~ poly(vmt, 3) + year + vmt*year
+# )
 # Not all regulatory classes or roadtypes or fueltypes actually exist in every county,
 # meaning that some runs won't actually produce any results. That's okay.
+
+
+formulas <- list(
+  # Simple single-variable Model
+  "11" = log(emissions) ~ vmt + year,
+  "12" = log(emissions) ~ log(vmt) + year,
+  # With interaction
+  "13" = log(emissions) ~ vmt * year,
+  "14" = log(emissions) ~ log(vmt)*year,
+  # Try polynomials of single-variable
+  "15" =  log(emissions) ~ year + poly(vmt, 2), # second degree
+  "16" =  log(emissions) ~ year * poly(vmt, 2), # with interaction
+  "17" =  log(emissions) ~ year + poly(log(vmt), 2), # with log
+  "18" =  log(emissions) ~ year * poly(log(vmt), 2), # with interaction
+  "19" =  log(emissions) ~ year + poly(vmt, 3), # third degree
+  "20" =  log(emissions) ~ year * poly(vmt, 3), # with interaction
+  "21" =  log(emissions) ~ year + poly(log(vmt), 3), # with log
+  "22" =  log(emissions) ~ year * poly(log(vmt), 3), # with interaction
+  # Simple 2-variable model
+  "23" = log(emissions) ~ year + vmt + vehicles,
+  "24" = log(emissions) ~ year + log(vmt) + log(vehicles),
+  "25" = log(emissions) ~ poly(log(vmt), 2) + log(vehicles) + year,
+  "26" = log(emissions) ~ poly(log(vmt), 2) + poly(log(vehicles), 2) + year,
+  # Simple 3-variable model
+  "27" = log(emissions) ~ year + vmt + vehicles + sourcehours,
+  "28" = log(emissions) ~ year + log(vmt) + log(vehicles) + log(sourcehours),
+  "29" = log(emissions) ~ poly(log(vmt), 2) + log(vehicles) + log(sourcehours) + year,
+  "30" = log(emissions) ~ poly(log(vmt), 2) + poly(log(vehicles), 2) + log(sourcehours) + year,
+  "31" = log(emissions) ~ poly(log(vmt), 2) + log(vehicles) + poly(log(sourcehours),2) + year,
+  "32" = log(emissions) ~ poly(log(vmt), 2) + poly(log(vehicles), 2) + poly(log(sourcehours),2) + year,
+  # 4-variable model
+  "33" = log(emissions) ~ year + vmt + vehicles + sourcehours + starts,
+  "34" = log(emissions) ~ year + log(vmt) + log(vehicles) + log(sourcehours) + log(starts),
+  "35" = log(emissions) ~ poly(log(vmt), 2) + log(vehicles) + log(sourcehours) + log(starts) + year,
+  "36" = log(emissions) ~ poly(log(vmt), 2) + log(vehicles) + poly(log(sourcehours),2) + log(starts) + year,
+  "37" = log(emissions) ~ poly(log(vmt), 2) + poly(log(vehicles),2) + log(sourcehours) + log(starts) + year,
+  "38" = log(emissions) ~ poly(log(vmt), 2) + poly(log(vehicles), 2) + poly(log(sourcehours),2) + log(starts) + year,
+  # Crazy Interactions
+  "39"  =  log(emissions) ~ poly(vmt, 2) + vehicles + poly(sourcehours,2) + starts + year +
+       year*vmt + year*sourcehours + vmt*sourcehours,
+  "40"  =  log(emissions) ~ poly(log(vmt), 2) + log(vehicles) + poly(log(sourcehours),2) + log(starts) + year +
+    year*log(vmt) + year*log(sourcehours) + log(vmt)*log(sourcehours)
+)
+
 
 
 conn = dbConnect(drv = RSQLite::SQLite(), "diagnostics/diagnostics.sqlite")
@@ -76,8 +120,12 @@ if(!"samples" %in% tables){
 }
 
 # Check the run_id last completed
-latest = conn %>% tbl("samples") %>% summarize(run_id = max(run_id, na.rm = TRUE)) %>% collect() %>% with(run_id)
+# latest = conn %>% tbl("samples") %>% summarize(run_id = max(run_id, na.rm = TRUE)) %>% collect() %>% with(run_id)
+# latest = if(is.na(latest)){ 0 }else{ latest }
+
+latest = conn %>% tbl("samples") %>% filter(formula_id > 10) %>% summarize(run_id = max(run_id, na.rm = TRUE)) %>% collect() %>% with(run_id)
 latest = if(is.na(latest)){ 0 }else{ latest }
+
 
 # Disconnect
 dbDisconnect(conn)
@@ -131,7 +179,7 @@ future_map(.x = 1:n, ~f(i = .x, runs = runs, n = n),
            .progress = TRUE, .options = furrr_options(seed = 12345))
 
 # conn = dbConnect(drv = RSQLite::SQLite(), "diagnostics/diagnostics.sqlite")
-# conn %>% tbl("samples")
+# conn %>% tbl("samples") %>% filter(formula_id > 10)
 # dbDisconnect(conn)
 
 plan(sequential)

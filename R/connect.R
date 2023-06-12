@@ -17,7 +17,7 @@ connect = function(.type = "data"){
         username = Sys.getenv("CATSERVER_USERNAME"),
         password = Sys.getenv("CATSERVER_PASSWORD"),
         host = Sys.getenv("CATSERVER_HOST"),
-        port = Sys.getenv("CATSERVER_PORT"),
+        port = as.integer(Sys.getenv("CATSERVER_PORT")),
         dbname = "granddata")
       # On Tim's computer:
       # path = "C:/Users/tmf77/OneDrive - Cornell University/Documents/rstudio/cat_static/db/data.sqlite"
@@ -37,7 +37,7 @@ connect = function(.type = "data"){
         username = Sys.getenv("CATSERVER_USERNAME"),
         password = Sys.getenv("CATSERVER_PASSWORD"),
         host = Sys.getenv("CATSERVER_HOST"),
-        port = Sys.getenv("CATSERVER_PORT"),
+        port = as.integer(Sys.getenv("CATSERVER_PORT")),
         dbname = "cov")
     }
   )

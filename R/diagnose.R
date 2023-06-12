@@ -18,7 +18,7 @@ diagnose <- function(.data, .formula, .pollutant, .by, .geoid) {
       # Extract GOF stats
       broom::glance() %>%
       # Label by formula
-      mutate(formula = as.character(.formula)[3]) %>%
+      mutate(formula = paste0(as.character(.formula)[2], "~", as.character(.formula)[3])) %>%
       # Label by geoid, pollutant, and by
       mutate(geoid = .geoid, pollutant = .pollutant, by = .by) %>%
       # Grab these diagnostics and columns
