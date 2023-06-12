@@ -14,8 +14,9 @@ connect = function(.type = "data"){
       # On Tim's computer:
       #path = "C:/Users/tmf77/OneDrive - Cornell University/Documents/rstudio/cat_static/db/data.sqlite"
       # On Repository computers:
+      # path = "z/data.sqlite"
       path = "z/db.sqlite"
-      path = "z/data.sqlite"
+      # On Yan's computer
       conn = dbConnect(RSQLite::SQLite(), path)
     }
 
