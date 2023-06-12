@@ -12,15 +12,15 @@ project = function(m, data, .newx, .cats = "year", .exclude = "geoid", .context 
   # .context = TRUE
   # .cats = "year"
 
-<<<<<<< HEAD
+#<<<<<<< HEAD
 
   source("R/setx.R")
-=======
+#=======
   source("R/setx.R")
   source("R/convert.R")
   source("R/find_transformation.R")
   load("data/transformations.rda")
->>>>>>> 7a9e4dd35860bd6798ccf289fd3cfea505d83b89
+#>>>>>>> 7a9e4dd35860bd6798ccf289fd3cfea505d83b89
 
   # Generate newdata for comparison
   newdata = setx(data, .newx, .cats = .cats, .exclude = .exclude, .context = .context)
@@ -41,12 +41,12 @@ project = function(m, data, .newx, .cats = "year", .exclude = "geoid", .context 
     # Filter just to the custom data
     filter(type == "custom") %>%
     # Get predictions
-<<<<<<< HEAD
+#<<<<<<< HEAD
     mutate(predict(m, ., se.fit = TRUE, ci = 0.95) %>%
              as_tibble() %>%
              # Including emissions, standard error, df, and sigma
              select(emissions = fit, se = se.fit, df, sigma = residual.scale))
-=======
+#=======
     mutate(get_predictions(m, newdata = ., se.fit = TRUE, ci = .ci, interval = "confidence", type = "response"))
 
 
@@ -66,15 +66,15 @@ project = function(m, data, .newx, .cats = "year", .exclude = "geoid", .context 
       mutate(convert(y = emissions, se = se, df = df, backtrans = otype$backtrans, ci = .ci)) %>%
       ungroup()
   }
->>>>>>> 7a9e4dd35860bd6798ccf289fd3cfea505d83b89
+#>>>>>>> 7a9e4dd35860bd6798ccf289fd3cfea505d83b89
 
   # Grab all default-derived data
   benchmark = newdata %>% filter(type != "custom")
 
-<<<<<<< HEAD
+#<<<<<<< HEAD
 
-=======
->>>>>>> 7a9e4dd35860bd6798ccf289fd3cfea505d83b89
+#=======
+#>>>>>>> 7a9e4dd35860bd6798ccf289fd3cfea505d83b89
   # Bind back together
   output = bind_rows(custom, benchmark)
 
