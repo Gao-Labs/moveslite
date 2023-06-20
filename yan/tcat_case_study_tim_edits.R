@@ -49,13 +49,14 @@ project(
 
 # FIX 2: #############################
 # This framework works!!!
-default_vmt = 761098
+default_vmt = 761098.4
+
 
 project(
   m = model, data = default,
   # FIX 1: YEAR WAS MISSING IN .newx --> always needs a year. #############################
   # No matter what, you always must supply a year - because that's necessary for it to guess the other values.
-  .newx = list(year = 2020, vmt = default_vmt * 0.99999),
+  .newx = list(year = 2020, vmt = default_vmt*0.5),
   .cats = "year", .exclude = "geoid",
   # Exclude the extra contextual observations
   .context = FALSE)
@@ -64,10 +65,10 @@ project(
 
 # Bad news: The model is HYPER sensitive around VMT, and is able to predict negative emissions. I don't like that.
 # So, we probably want to add some log-transformations the outcome (and maybe predictors) like so:
-model = default %>% lm(formula = log(emissions) ~ poly(vmt, 2) + year)
+model = default %>% lm(formula = log(emissions) ~ poly(log(vmt), 2) + year)
 glance(model)
 # This works much more naturally.
 project(
-  .newx = list(year = 2020, vmt = default_vmt * 0.50),
+  .newx = list(year = 2020, vmt = 1527484, sourcehours = 100866),
   m = model, data = default, .cats = "year", .exclude = "geoid", .context = FALSE)
 

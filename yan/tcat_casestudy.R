@@ -47,6 +47,11 @@ for (day in days) {
   total_hour <- c(total_hour, sum_hours)
 }
 
+# Use unique() to get the unique numbers
+unique_numbers <- unique(trip_info_2020$Route)
+
+# Count the unique numbers using length()
+count <- length(unique_numbers)
 
 library(dplyr)
 library(broom)
@@ -85,8 +90,8 @@ default <- default %>%
   group_by(year) %>%
   summarize_if(is.double, sum)
 
-vmt = total_mile[1]*262 + total_mile[2]*52 + total_mile[3]*52
-sourcehours = total_hour[1]*262 + total_hour[2]*52 + total_hour[3]*52
+.vmt = total_mile[1]*262 + total_mile[2]*52 + total_mile[3]*52
+.sourcehours = total_hour[1]*262 + total_hour[2]*52 + total_hour[3]*52
 
 dbDisconnect(db); remove(db)
 
