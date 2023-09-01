@@ -65,10 +65,21 @@ project(
 
 # Bad news: The model is HYPER sensitive around VMT, and is able to predict negative emissions. I don't like that.
 # So, we probably want to add some log-transformations the outcome (and maybe predictors) like so:
-model = default %>% lm(formula = log(emissions) ~ poly(log(vmt), 2) + year)
+model = default %>% lm(formula = log(emissions) ~ log(vmt) + vehicles + sourcehours + year)
 glance(model)
 # This works much more naturally.
 project(
-  .newx = list(year = 2020, vmt = 1527484, sourcehours = 100866),
+  .newx = list(year = 2020, vmt = 1527484, sourcehours = 100866.5, vehicles = 45),
   m = model, data = default, .cats = "year", .exclude = "geoid", .context = FALSE)
+
+model = default %>% lm(formula = emissions ~year * poly(log(vmt), 3))
+
+project(
+  .newx = list(year = 2020, vmt = 1527484),
+  m = model, data = default, .cats = "year", .exclude = "geoid", .context = FALSE)
+
+
+vars = c("year", "vmt", "vehicles", "sourcehours", "starts")
+
+
 
