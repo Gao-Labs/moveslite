@@ -144,6 +144,10 @@ read_rds("diagnostics/runs.rds") %>%
   mutate(run_id = 1:n()) %>%
   saveRDS("diagnostics/runs_sample.rds")
 
+
+
+
+
 # For each set, we took a random sample of 10 cells from within each census division.
 rm(list = ls())
 
