@@ -46,14 +46,20 @@ dbDisconnect(db)
 
 # Best recent models.
 
+# BEST
 # "log(emissions)~poly(year, 2) + poly(log(vmt), 3) +
 # vehicles + sourcehours + starts"
 
 # "log(emissions)~poly(year, 2) + poly(log(vmt), 3) +
 #vehicles + sourcehours"
 
+# Simple Enough
 # "log(emissions)~year + poly(log(vmt), 2) +
 #sqrt(vehicles) + sqrt(sourcehours)"
 
 # "log(emissions)~year + poly(log(vmt), 2) +
 #log(vehicles) + sqrt(sourcehours)"
+
+
+
+
