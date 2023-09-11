@@ -39,7 +39,49 @@ dbDisconnect(db); remove(db)
 ##############################FORMULA 1 with VMT###################################
 ###################################################################################
 
-formula1 = log(emissions) ~ poly(log(vmt),3) + (vehicles) + (sourcehours) + poly(year,2) + starts
+library(dplyr)
+
+
+# Let's write a function
+# that estimates realistic values for vmt vehicles statrs and sourcehours when vmt or vehicles changes.
+new = function(.year = 2020, .vmt =43647,  .vehicles = 10, .mph = 13){
+  tribble(
+    ~year,  ~vmt,                ~vehicles,   ~sourcehours,       ~starts,
+
+    .year,   .vmt * .vehicles,   .vehicles,   .vehicles*.vmt/.mph,  2000*.vehicles
+
+  )
+}
+
+
+
+d1 = bind_rows(
+  new(.year = 2020, .vehicles = 10),
+  new(.year = 2025, .vehicles = 15),
+  new(.year = 2030, .vehicles = 20),
+  new(.year = 2040, .vehicles = 25),
+  new(.year = 2050, .vehicles = 30)
+)
+
+d2 = bind_rows(
+  new(.year = 2020, .vehicles = 10),
+  new(.year = 2025, .vehicles = 9),
+  new(.year = 2030, .vehicles = 8),
+  new(.year = 2040, .vehicles = 7),
+  new(.year = 2050, .vehicles = 6)
+)
+
+myvmt = 43647
+d3 = bind_rows(
+  new(.year = 2020, .vmt = myvmt),
+  new(.year = 2025, .vmt = myvmt - 1000),
+  new(.year = 2030, .vmt = myvmt - 2000),
+  new(.year = 2040, .vmt = myvmt - 3000),
+  new(.year = 2050, .vmt = myvmt - 4000)
+)
+
+
+formula1 = log(emissions) ~ log(vmt) + (vehicles) + sqrt(sourcehours) + poly(year,2) + starts
 #formula1 = log(emissions) ~ poly(log(vmt), 2) + log(vehicles) + (sourcehours) + poly(year,2))
 
 # Compute the model
@@ -59,12 +101,14 @@ data <- data.frame(emissions = 1338.3,
 
 vmt_seq <- seq(min(default$vmt), max(default$vmt),
                length.out = round(-(min(default$vmt) - max(default$vmt))/100,0))
-vmt_seq
+
 data1 <- data.frame(vmt = vmt_seq,
                    vehicles = data$vehicles,
                    sourcehours = data$sourcehours,
                    year = 2020,
                    starts = data$starts)
+
+
 
 # Calculate predicted emissions using the model
 data1$predicted_emissions <- exp(predict(model1, newdata = data1))
@@ -185,14 +229,34 @@ ggplot(data3, aes(x = sourcehours, y = predicted_emissions)) +
 starts_seq <- seq(min(default$starts), max(default$starts), length.out = -(min(default$starts) - max(default$starts))/20)
 
 
-data4 <- data.frame(vmt = data$vmt,
-                    vehicles = data$vehicles,
-                    sourcehours = data$sourcehours,
+data4 <- data.frame(vmt = 1527484+50000,
+                    vehicles = 45,
+                    sourcehours = 100866.5,
                     year = 2020,
-                    starts = starts_seq)
+                    starts = 45*1300)
 
 # Calculate predicted emissions using the model
 data4$predicted_emissions <- exp(predict(model1, newdata = data4))
+
+
+data5 <- data.frame(vmt = 278947275-2000000,
+                    vehicles = 25043.6,
+                    sourcehours = 7975749,
+                    year = 2020,
+                    starts = 29612701)
+
+f = log(emissions) ~ poly(log(vmt),3) + (vehicles) + (sourcehours) + poly(year,2) + starts
+#f = log(emissions) ~ poly(log(vmt),2) + sqrt(vehicles) + sqrt(sourcehours) + year
+#formula1 = log(emissions) ~ poly(log(vmt), 2) + log(vehicles) + (sourcehours) + poly(year,2))
+
+# Compute the model
+m = default %>% lm(formula = f)
+
+glance(m)
+
+# Calculate predicted emissions using the model
+data5$predicted_emissions <- exp(predict(m, newdata = data5))
+
 
 marker_data4 <- data.frame(starts = 46897.5,
                            emissions = 1338.3)
@@ -205,4 +269,103 @@ ggplot(data4, aes(x = starts, y = predicted_emissions)) +
   ggtitle("Predicted Emissions vs. starts") +
   theme_minimal()
 
+
+
+
+
+############################################################################
+
+
+
+# Let's write a function
+# that estimates realistic values for vmt vehicles statrs and sourcehours when vmt or vehicles changes.
+new = function(.year = 2020, .vmt =43647,  .vehicles = 10, .mph = 13){
+  tribble(
+    ~year,  ~vmt,                ~vehicles,   ~sourcehours,       ~starts,
+
+    .year,   .vmt * .vehicles,   .vehicles,   .vehicles*.vmt/.mph,  1300*.vehicles
+
+  )
+}
+
+d1 = bind_rows(
+  new(.year = 2020, .vehicles = 20),
+  new(.year = 2025, .vehicles = 30),
+  new(.year = 2030, .vehicles = 40),
+  new(.year = 2040, .vehicles = 60),
+  new(.year = 2050, .vehicles = 80)
+)
+
+d2 = bind_rows(
+  new(.year = 2020, .vehicles = 40),
+  new(.year = 2025, .vehicles = 30),
+  new(.year = 2030, .vehicles = 20),
+  new(.year = 2040, .vehicles = 15),
+  new(.year = 2050, .vehicles = 10)
+)
+
+myvmt = 43647
+d3 = bind_rows(
+  new(.year = 2020, .vmt = myvmt),
+  new(.year = 2025, .vmt = myvmt - 1000),
+  new(.year = 2030, .vmt = myvmt - 2000),
+  new(.year = 2040, .vmt = myvmt - 3000),
+  new(.year = 2050, .vmt = myvmt - 4000)
+)
+
+
+
+output = bind_rows(d1,d2,d3, .id = "id") %>%
+  mutate(emissions = predict(m, newdata = .) %>% exp())
+
+g1 = ggplot(data = output %>% filter(id == 1), mapping = aes(x = year, y = emissions, label = vehicles)) +
+  geom_line() + geom_label() + labs(x = "Year (Increasing Vehicles)", y = "Emission (tons)", title = "")
+g2 = ggplot(data = output %>% filter(id == 2), mapping = aes(x = year, y = emissions, label = vehicles)) +
+  geom_line() + geom_label() + labs(x = "Year (Decreasing Vehicles)", y = NULL, title = "Year vs. Carbon Emission")
+g3 = ggplot(data = output %>% filter(id == 3), mapping = aes(x = year, y = emissions, label = vmt)) +
+  geom_line() + geom_label() + labs(x = "Year (Decreasing VMT)", y = NULL, title = "" ) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+#install.packages("ggpubr")
+library(ggpubr)
+gg = ggarrange(plotlist = list(g1,g2,g3), ncol = 3, nrow = 1)
+
+gg
+ggsave(plot = gg, filename = "radviz.png", dpi = 500, width = 8, height = 4)
+
+###################################################################################################
+
+g1 = ggplot(data = output %>% filter(id == 1), mapping = aes(x = year, y = emissions, label = vehicles)) +
+  geom_line() + geom_text(hjust = 0.8, nudge_y = 0, size = 2.5) + labs(x = "Year (Increasing Vehicles)", y = "Emission (tons)", title = "")
+g2 = ggplot(data = output %>% filter(id == 2), mapping = aes(x = year, y = emissions, label = vehicles)) +
+  geom_line() + geom_label(label.padding = unit(0.01, "lines")) + labs(x = "Year (Decreasing Vehicles)", y = NULL, title = "Year vs. Carbon Emission")
+g3 = ggplot(data = output %>% filter(id == 3), mapping = aes(x = year, y = emissions, label = vmt)) +
+  geom_line() + geom_label() + labs(x = "Year (Decreasing VMT)", y = NULL, title = "" ) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+#install.packages("ggpubr")
+library(ggpubr)
+gg = ggarrange(plotlist = list(g1,g2,g3), ncol = 3, nrow = 1)
+
+gg
+ggsave(plot = gg, filename = "radviz.png", dpi = 500, width = 8, height = 4)
+
+
+f = log(emissions) ~ poly(log(vmt),3) + (vehicles) + (sourcehours) + poly(year,2) + starts
+#f = log(emissions) ~ poly(log(vmt),2) + sqrt(vehicles) + sqrt(sourcehours) + year
+#formula1 = log(emissions) ~ poly(log(vmt), 2) + log(vehicles) + (sourcehours) + poly(year,2))
+
+# Compute the model
+m = default %>% lm(formula = f)
+
+data4 <- data.frame(vmt = 1527484+50000,
+                    vehicles = 45,
+                    sourcehours = 100866.5,
+                    year = 2020,
+                    starts = 45*1300)
+
+# Calculate predicted emissions using the model
+data4$predicted_emissions <- exp(predict(m, newdata = data4))
 
