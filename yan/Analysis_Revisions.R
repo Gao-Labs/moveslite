@@ -369,3 +369,8 @@ data4 <- data.frame(vmt = 1527484+50000,
 # Calculate predicted emissions using the model
 data4$predicted_emissions <- exp(predict(m, newdata = data4))
 
+project(
+  .newx = list(year = 2020, vmt = 1527484+50000, vehicles = 45, sourcehours = 100866.5, starts = 45*1300),
+  m = m, data = default, .cats = "year", .exclude = "geoid", .context = FALSE)
+
+
