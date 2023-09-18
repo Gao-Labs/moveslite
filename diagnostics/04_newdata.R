@@ -5,7 +5,8 @@
 library(dplyr)
 
 
-
+# Let's write a function
+# that estimates realistic values for vmt vehicles statrs and sourcehours when vmt or vehicles changes.
 new = function(.year = 2020, .vmt =43647,  .vehicles = 10, .mph = 13){
 tribble(
   ~year,  ~vmt,                ~vehicles,   ~sourcehours,       ~starts,
@@ -13,7 +14,6 @@ tribble(
   .year,   .vmt * .vehicles,   .vehicles,   .vehicles*.vmt/.mph,  2000*.vehicles
 
 )
-
 }
 
 

@@ -1,10 +1,12 @@
 #' @name project()
 #'
 #' @description Function to generate data.frames of projected emissions given
+#' @importFrom dplyr `%>%` select mutate as_tibble filter
 #' @export
 
 project = function(m, data, .newx, .cats = "year", .exclude = "geoid", .context = TRUE, .ci = 0.95){
   # Example
+
   #.newx = tibble(year = 2020, vmt = 200)
 
   # .exclude = "geoid"
@@ -23,9 +25,9 @@ project = function(m, data, .newx, .cats = "year", .exclude = "geoid", .context 
   get_predictions = function(...){
     output = predict(...)
 
-    result = output$fit %>% as_tibble() %>%
-      select(emissions = fit, lower = lwr, upper = upr) %>%
-      mutate(se = output$se.fit,
+    result = output$fit %>% dplyr::as_tibble() %>%
+      dplyr::select(emissions = fit, lower = lwr, upper = upr) %>%
+      dplyr::mutate(se = output$se.fit,
              df = output$df,
              sigma = output$residual.scale)
     return(result)
@@ -34,9 +36,9 @@ project = function(m, data, .newx, .cats = "year", .exclude = "geoid", .context 
   # Add predictions for the custom data
   custom = newdata %>%
     # Filter just to the custom data
-    filter(type == "custom") %>%
+    dplyr::filter(type == "custom") %>%
     # Get predictions
-    mutate(get_predictions(m, newdata = ., se.fit = TRUE, ci = .ci, interval = "confidence", type = "response"))
+    dplyr::mutate(get_predictions(m, newdata = ., se.fit = TRUE, ci = .ci, interval = "confidence", type = "response"))
 
 
   # Check whether the outcome is transformed or not

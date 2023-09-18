@@ -1,5 +1,10 @@
-^movesai\.Rproj$
+^moveslite\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^README\.Rmd$
 ^cran-comments\.md$
+^diagnostics$
+^z$
+^tim$
+^dev.R
+^workflow.R

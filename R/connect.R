@@ -1,18 +1,22 @@
-#' @name connect()
+#' @name connect
+#' @title Connect to MySQL database Function
+#' @author Tim Fraser & Yan Guo
 #' @description Connect to a database of interest to this project.
 #' @param .type (character) "data" = Cat-formatted MOVES grand data database
+#' @importFrom DBI dbConnect dbDisconnect
+#' @importFrom RMySQL MySQL
 #' @export
 
 connect = function(.type = "data"){
-  require(DBI)
-  require(RSQLite)
+  #require(DBI)
+  #require(RSQLite)
 
   switch(
     EXPR = .type,
 
     "data" = {
       # On Tim's computer:
-      conn = dbConnect(
+      conn = DBI::dbConnect(
         drv = RMySQL::MySQL(),
         username = Sys.getenv("CATSERVER_USERNAME"),
         password = Sys.getenv("CATSERVER_PASSWORD"),
@@ -32,7 +36,7 @@ connect = function(.type = "data"){
       #path =  "z/cov.sqlite"
       #conn = dbConnect(RSQLite::SQLite(), path)
       # On Tim's computer:
-      conn = dbConnect(
+      conn = DBI::dbConnect(
         drv = RMySQL::MySQL(),
         username = Sys.getenv("CATSERVER_USERNAME"),
         password = Sys.getenv("CATSERVER_PASSWORD"),
