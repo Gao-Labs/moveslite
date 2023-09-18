@@ -3,7 +3,7 @@
 #' @description Function to find the transformation used on the model outcome, if any.
 #'
 #' @param m model object
-#' @importFrom dplyr case_when
+#' @importFrom dplyr `%>%' case_when
 #' @importFrom stringr str_detect
 
 find_transformation = function(m){

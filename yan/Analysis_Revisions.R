@@ -319,17 +319,17 @@ output = bind_rows(d1,d2,d3, .id = "id") %>%
   mutate(emissions = predict(m, newdata = .) %>% exp())
 
 g1 = ggplot(data = output %>% filter(id == 1), mapping = aes(x = year, y = emissions, label = vehicles)) +
-  geom_line() + geom_label() + labs(x = "Year (Increasing Vehicles)", y = "Emission (tons)", title = "") +
+  geom_line() + geom_label() + labs(x = "Year (Increasing vehicles)", y = "Emission (tons)", title = "") +
   theme_classic() +
   theme(panel.border = element_rect(fill = NA, color = "#373737")) +
-  ggplot2::scale_x_continuous(expand = expansion(c(0.25, 0.25)))
+  ggplot2::scale_x_continuous(expand = expansion(c(0.1, 0.1)))
 g2 = ggplot(data = output %>% filter(id == 2), mapping = aes(x = year, y = emissions, label = vehicles)) +
-  geom_line() + geom_label() + labs(x = "Year (Decreasing Vehicles)", y = NULL, title = "Year vs. Carbon Emission") +
+  geom_line() + geom_label() + labs(x = "Year (Decreasing vehicles)", y = NULL, title = "Year vs. Carbon Emission") +
   theme_classic() +
   theme(panel.border = element_rect(fill = NA, color = "#373737")) +
-  ggplot2::scale_x_continuous(expand = expansion(c(0.25, 0.25)))
+  ggplot2::scale_x_continuous(expand = expansion(c(0.1, 0.1)))
 g3 = ggplot(data = output %>% filter(id == 3), mapping = aes(x = year, y = emissions, label = vmt)) +
-  geom_line() + geom_label() + labs(x = "Year (Decreasing VMT)", y = NULL, title = "" ) +
+  geom_line() + geom_label() + labs(x = "Year (Decreasing vmt)", y = NULL, title = "" ) +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5)) +
   theme(panel.border = element_rect(fill = NA, color = "#373737")) +
@@ -362,6 +362,29 @@ gg
 ggsave(plot = gg, filename = "radviz.png", dpi = 500, width = 8, height = 4)
 
 
+
+#' These are the 5 core functions in `moveslite`.
+source("R/connect.R")
+source("R/query.R")
+source("R/setx.R")
+source("R/estimate.R")
+source("R/project.R")
+
+# Connect to the 'data' database (tenatively your z/db.sqlite file)
+db = connect("data")
+
+vars = c("year", "vmt", "vehicles", "sourcehours", "starts")
+
+# Download data (should end up with ~14 rows)
+default = query(
+  .db = db,
+  .table = "d36109",
+  .filters = c(.pollutant = 98, .by = 8, .sourcetype = 42),
+  .vars = vars)
+
+dbDisconnect(db); remove(db)
+
+
 f = log(emissions) ~ poly(log(vmt),3) + (vehicles) + (sourcehours) + poly(year,2) + starts
 #f = log(emissions) ~ poly(log(vmt),2) + sqrt(vehicles) + sqrt(sourcehours) + year
 #formula1 = log(emissions) ~ poly(log(vmt), 2) + log(vehicles) + (sourcehours) + poly(year,2))
@@ -369,18 +392,13 @@ f = log(emissions) ~ poly(log(vmt),3) + (vehicles) + (sourcehours) + poly(year,2
 # Compute the model
 m = default %>% lm(formula = f)
 
-data4 <- data.frame(vmt = 1527484+50000,
-                    vehicles = 45,
-                    sourcehours = 100866.5,
-                    year = 2020,
-                    starts = 45*1300)
-
-# Calculate predicted emissions using the model
-data4$predicted_emissions <- exp(predict(m, newdata = data4))
-
+glance(m)
 
 output = project(
-  .newx = list(year = 2020, vmt = 1527484+50000, vehicles = 45, sourcehours = 100866.5, starts = 45*1300),
+  .newx = list(year = 2020, vmt = 1527484+50000, vehicles = 45, sourcehours = 100866.5, starts = 58500),
   m = m, data = default, .cats = "year", .exclude = "geoid", .context = FALSE)
 
 output
+
+
+
