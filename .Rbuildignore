@@ -9,4 +9,5 @@
 ^tim$
 ^dev.R
 ^workflow.R
-^data/make_data.R
+^z/make_data.R
+^z/keywords.csv

@@ -1,4 +1,5 @@
-#' @name convert()
+#' @name convert
+#' @title convert
 #' @author Tim Fraser
 #' @description Function to convert outcome predictions and standard error back from a transformation, using simulation.
 #' @importFrom dplyr %>% tibble

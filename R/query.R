@@ -1,4 +1,5 @@
-#' @name query()
+#' @name query
+#' @title query
 #' @description Query the CAT grand database for a specific slice of data.
 #' @param .db database connection object for CAT GRAND database or CAT formatted MOVES output data
 #' @param .table Name of table in database object `.db`

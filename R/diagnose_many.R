@@ -1,4 +1,4 @@
-#' @name diagnose_many()
+#' @name diagnose_many
 #' @title Diagnostics for **many** models based on formula
 #' @description For a list of formula, evaluate each model's goodness of fit and return identifiers.
 #' @importFrom dplyr %>% mutate select filter arrange bind_rows collect tbl

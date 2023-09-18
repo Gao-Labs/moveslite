@@ -1,4 +1,4 @@
-#' @name estimate()
+#' @name estimate
 #' @title Estimate your area-specific model
 #' @param .filters (vector/list) Named Vector or List of inputted values for filtering.
 #' @param .vars (character vector) Vector of variables to use as predictors.

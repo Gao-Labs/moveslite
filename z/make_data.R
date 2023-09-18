@@ -1,11 +1,11 @@
-#' @name make_data.R
+#' @name make_data
+#' @title make_data.R
 #' @author Tim Fraser
 #' @description
 #' This script generates data for use in the MOVESLite R package.
 #' This data will be saved within the R package when rendered.
-
-library(dplyr)
-library(readr)
+#' @importFrom dplyr `%>%` tibble bind_rows
+#' @importFrom readr read_csv
 
 # Possible transformations to search for
 pattern_log = paste0(
@@ -73,5 +73,8 @@ transformations = bind_rows(
 
 
 save(transformations, file = "data/transformations.rda")
+
+keywords = readr::read_csv("z/keywords.csv")
+save(keywords, file = "data/keywords.rda")
 
 rm(list = ls())
