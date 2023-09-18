@@ -72,14 +72,13 @@ project(
   .newx = list(year = 2020, vmt = 1527484, sourcehours = 100866.5, vehicles = 45),
   m = model, data = default, .cats = "year", .exclude = "geoid", .context = FALSE)
 
-model = default %>% lm(formula = emissions ~year * poly(log(vmt), 3))
+model = default %>% lm(formula = log(emissions) ~ poly(log(vmt),3) + (vehicles) + (sourcehours) + poly(year,2) + starts)
 
-project(
-  .newx = list(year = 2020, vmt = 1527484),
-  m = model, data = default, .cats = "year", .exclude = "geoid", .context = FALSE)
+output = project(
+  .newx = list(year = 2020, vmt = 1527484+50000, vehicles = 45, sourcehours = 100866.5, starts = 45*1300),
+  m = m, data = default, .cats = "year", .exclude = "geoid", .context = FALSE)
 
-
-vars = c("year", "vmt", "vehicles", "sourcehours", "starts")
+output
 
 
 

@@ -63,8 +63,6 @@ source("R/setx.R")
 source("R/estimate.R")
 source("R/project.R")
 
-#' Our goal is to extend their functionality.
-
 #' Here's an example of their usage.
 
 # Connect to the 'data' database (tenatively your z/db.sqlite file)
@@ -90,6 +88,7 @@ default <- default %>%
   group_by(year) %>%
   summarize_if(is.double, sum)
 
+# calculate the total vmt, and total sourcehours
 .vmt = total_mile[1]*262 + total_mile[2]*52 + total_mile[3]*52
 .sourcehours = total_hour[1]*262 + total_hour[2]*52 + total_hour[3]*52
 
@@ -104,25 +103,42 @@ tcat_2020 <- data.frame(
 )
 
 # Estimate the model
-#############################################################################################
-model = estimate(data = default, .vars = .vars)
+############################################################################################
+model = default %>% lm(formula = log(emissions) ~ poly(log(vmt),3) + (vehicles) + (sourcehours) + poly(year,2) + starts)
 
-summary(model)
-# View its quality of fit
 model %>% glance()
 
-# Suppose we had some information about 1 or more variables for a custom scenario year
-.newx1 = list(vmt = 700000)
+# as vmt increase by 500000, how does the emission changes
+# for prediction of other others, just change the number in the project function
+output = project(
+  .newx = list(year = 2020, vmt = 1,527484, vehicle = 45, sourcehours = 100866.5, starts = 58500),
+  m = model, data = default, .cats = "year", .exclude = "geoid", .context = FALSE)
 
-.newx2 = list(year = 2020,
-             vmt = 3037774,
-             sourcehours = 85219.7,
-             vehicles = 102.2,
-             starts = 175813.0)
+output
 
-# Quantities of interest
-qis = project(m = model, data = default, .newx = .newx1,
-              .cats = "year", .exclude = "geoid", .context = TRUE)
 
-# Look at the custom prediction versus the benchmark
-qis %>% filter(type %in% c("custom", "benchmark"))
+
+library(ggplot2)
+library(scales)
+
+# Create a data frame with the emissions data
+data <- data.frame(
+  x = c("Bus", "Bus", "Car", "Car"),
+  y = c("Current", "Predicted", "Current", "Predicted"),
+  Emission = c(2889, 3607, 94432, 95946)
+)
+
+# Create a side-by-side bar plot with different scales
+plot <- ggplot(data, aes(x = x, y = Emission, fill = y)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9), width = 0.7) +
+  labs(title = "Emission Comparison for Buses and Cars",
+       x = "Vehicle",
+       y = "Emission",
+       fill = "Emission Type") +
+  theme_minimal() +
+  scale_y_continuous(labels = comma_format(scale = 1e-3), breaks = seq(0, 100, by = 20)) +
+  scale_fill_manual(values = c("Current" = "blue", "Predicted" = "red")) +
+  facet_wrap(~x, scales = "free_y")
+
+# Add numbers on top of the bars
+plot <- plot + geom_text(aes(label = Emission), position = position_dodge(width = 0.9), vjust = -0.5)

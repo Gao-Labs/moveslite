@@ -7,6 +7,8 @@
 
 library(dplyr)
 library(broom)
+library(ggplot2)
+
 
 #' These are the 5 core functions in `moveslite`.
 source("R/connect.R")
@@ -39,13 +41,10 @@ default = query(.db = db, .table = .table, .filters = .filters, .vars = .vars)
 # Correlation Check
 cor(default[, -1])
 
-library(ggplot2)
 # plot emission
 ggplot(data = default, aes(x = year, y = emissions)) +
   geom_point() +
   labs(title = "Scatter Plot of Emissions")
-
-
 
 
 # Create a new plot window
@@ -61,6 +60,7 @@ par(mfrow = c(1, 1))
 
 # without interaction terms
 model = lm(emissions ~ vmt + starts + vehicles + sourcehours + year, data = default)
+summary(model)
 # r2 = 0.9143
 
 # vehicles is not significant
@@ -228,8 +228,6 @@ model %>% glance()
 .data = test
 
 
-diagnostic(test, .formula = emissions ~ year + poly(vmt, 3))
-
 rm(list = ls())
 
 tabler = function(.geoid = "36109", .pollutant = 98, .by = 8, .type = 42){
@@ -310,28 +308,6 @@ alltables = tibble(tables = db %>% dbListTables()) %>%
 
 allgeoids = stringr::str_remove(alltables, "d")
 allgeoids
-##########################################################################################
-##########################################################################################
-##########################################################################################
-
-set.seed(123)  # Set a random seed for reproducibility
-train_size <- floor(0.7 * nrow(default))
-train_indices <- sample(seq_len(nrow(default)), size = train_size)
-
-train_data <- default[train_indices, ]
-test_data <- default[-train_indices, ]
-
-# Train the linear regression model
-model = lm(emissions ~  year + vmt + sourcehours + vehicles + starts +
-             year*vmt + year*sourcehours + vmt*sourcehours -1, data = train_data[, -1])
-# Make predictions on the test set
-predictions <- predict(model, newdata = test_data)
-
-# Calculate evaluation metrics
-mse <- mean((test_data[["emissions"]] - predictions)^2)
-rmse <- sqrt(mse)
-r_squared <- summary(model)$r.squared
-
 
 
 # Disconnect

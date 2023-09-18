@@ -81,7 +81,7 @@ d3 = bind_rows(
 )
 
 
-formula1 = log(emissions) ~ log(vmt) + (vehicles) + sqrt(sourcehours) + poly(year,2) + starts
+formula1 = log(emissions) ~ poly(log(vmt), 3) + (vehicles) + sqrt(sourcehours) + poly(year,2) + starts
 #formula1 = log(emissions) ~ poly(log(vmt), 2) + log(vehicles) + (sourcehours) + poly(year,2))
 
 # Compute the model
@@ -319,12 +319,21 @@ output = bind_rows(d1,d2,d3, .id = "id") %>%
   mutate(emissions = predict(m, newdata = .) %>% exp())
 
 g1 = ggplot(data = output %>% filter(id == 1), mapping = aes(x = year, y = emissions, label = vehicles)) +
-  geom_line() + geom_label() + labs(x = "Year (Increasing Vehicles)", y = "Emission (tons)", title = "")
+  geom_line() + geom_label() + labs(x = "Year (Increasing Vehicles)", y = "Emission (tons)", title = "") +
+  theme_classic() +
+  theme(panel.border = element_rect(fill = NA, color = "#373737")) +
+  ggplot2::scale_x_continuous(expand = expansion(c(0.25, 0.25)))
 g2 = ggplot(data = output %>% filter(id == 2), mapping = aes(x = year, y = emissions, label = vehicles)) +
-  geom_line() + geom_label() + labs(x = "Year (Decreasing Vehicles)", y = NULL, title = "Year vs. Carbon Emission")
+  geom_line() + geom_label() + labs(x = "Year (Decreasing Vehicles)", y = NULL, title = "Year vs. Carbon Emission") +
+  theme_classic() +
+  theme(panel.border = element_rect(fill = NA, color = "#373737")) +
+  ggplot2::scale_x_continuous(expand = expansion(c(0.25, 0.25)))
 g3 = ggplot(data = output %>% filter(id == 3), mapping = aes(x = year, y = emissions, label = vmt)) +
   geom_line() + geom_label() + labs(x = "Year (Decreasing VMT)", y = NULL, title = "" ) +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(panel.border = element_rect(fill = NA, color = "#373737")) +
+  ggplot2::scale_x_continuous(expand = expansion(c(0.25, 0.25)))
 
 
 #install.packages("ggpubr")
@@ -339,7 +348,7 @@ ggsave(plot = gg, filename = "radviz.png", dpi = 500, width = 8, height = 4)
 g1 = ggplot(data = output %>% filter(id == 1), mapping = aes(x = year, y = emissions, label = vehicles)) +
   geom_line() + geom_text(hjust = 0.8, nudge_y = 0, size = 2.5) + labs(x = "Year (Increasing Vehicles)", y = "Emission (tons)", title = "")
 g2 = ggplot(data = output %>% filter(id == 2), mapping = aes(x = year, y = emissions, label = vehicles)) +
-  geom_line() + geom_label(label.padding = unit(0.01, "lines")) + labs(x = "Year (Decreasing Vehicles)", y = NULL, title = "Year vs. Carbon Emission")
+  geom_line() + geom_label(label.padding = unit(0.02, "lines")) + labs(x = "Year (Decreasing Vehicles)", y = NULL, title = "Year vs. Carbon Emission")
 g3 = ggplot(data = output %>% filter(id == 3), mapping = aes(x = year, y = emissions, label = vmt)) +
   geom_line() + geom_label() + labs(x = "Year (Decreasing VMT)", y = NULL, title = "" ) +
   theme(plot.title = element_text(hjust = 0.5))
@@ -369,8 +378,9 @@ data4 <- data.frame(vmt = 1527484+50000,
 # Calculate predicted emissions using the model
 data4$predicted_emissions <- exp(predict(m, newdata = data4))
 
-project(
+
+output = project(
   .newx = list(year = 2020, vmt = 1527484+50000, vehicles = 45, sourcehours = 100866.5, starts = 45*1300),
   m = m, data = default, .cats = "year", .exclude = "geoid", .context = FALSE)
 
-
+output
