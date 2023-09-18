@@ -32,6 +32,4 @@ install.packages("~/rstudio/moveslite/moveslite_0.1.0.tar.gz", type = "source")
 # Restart R
 .rs.restartR() # Only works in RStudio
 
-# Reset working directory to whatever your preferred directory is
-setwd("~/rstudio/cat_reporter")
 
