@@ -1,7 +1,7 @@
 #' @name query_many()
 #' @description Query multiple subsets
 #'
-#' @importFrom dplyr tribble mutate filter left_join select any_of
+#' @importFrom dplyr `%>%` tribble mutate filter left_join select any_of %>%
 #' @export
 
 query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .by = 17), .vars = c("vmt", "vehicles", "sourcehours", "starts")){

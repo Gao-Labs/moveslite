@@ -3,6 +3,8 @@
 #' @description
 #' This script generates data for use in the MOVESLite R package.
 #' This data will be saved within the R package when rendered.
+#' @importFrom dplyr `%>%` filter collect %>% tbl
+
 
 library(dplyr)
 library(readr)
