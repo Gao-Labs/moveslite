@@ -14,3 +14,6 @@ table_exists(.db, .table = "d36109")
 \description{
 Helper function to check if the supplied database table exists
 }
+\author{
+Tim Fraser & Yan Guo
+}

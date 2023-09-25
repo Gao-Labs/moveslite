@@ -1,11 +1,11 @@
 #' @name find_transformation
 #' @title find_transformation
-#' @author Tim Fraser
+#' @author Tim Fraser & Yan Guo
 #' @description Function to find the transformation used on the model outcome, if any.
-#'
 #' @param m model object
 #' @importFrom dplyr case_when
 #' @importFrom stringr str_detect
+#' @importFrom base names
 
 find_transformation = function(m){
 
@@ -13,7 +13,7 @@ find_transformation = function(m){
   load("data/transformations.rda")
 
   # Get first part of model formula (before ~)
-  outcome = names(m$model)[1]
+  outcome = base::names(m$model)[1]
 
   # Check if the outcome formula has any transformations
   outcometype =  dplyr::case_when(

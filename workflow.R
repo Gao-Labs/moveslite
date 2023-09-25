@@ -1,4 +1,5 @@
 #' @name workflow
+#' @author Tim Fraser & Yan Guo
 #' @description Remind me how to use the package! Demonstrate an example workflow!
 
 #' @note Packages you need to load!
@@ -16,7 +17,6 @@ library(DBI)
 library(RMySQL)
 
 #' Here's an example of their usage.
-dbDisconnect(db)
 # Connect to the 'data' database (tenatively your z/db.sqlite file)
 db = connect("data")
 

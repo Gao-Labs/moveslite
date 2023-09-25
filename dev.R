@@ -12,7 +12,7 @@ unloadNamespace(ns = "moveslite"); rm(list = ls()); remove.packages("moveslite")
 
 # Document the package
 devtools::document(".")
-
+warnings()
 # Test package
 # devtools::load_all()
 # moveslite::keywords

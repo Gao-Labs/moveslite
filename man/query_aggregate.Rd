@@ -18,3 +18,6 @@ query_aggregate(data, .by = 8)
 \description{
 Aggregate/relabel a queried subset, to generate mode-mix / fuel-mix
 }
+\author{
+Tim Fraser & Yan Guo
+}

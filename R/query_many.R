@@ -1,8 +1,19 @@
 #' @name query_many
 #' @title query_many
 #' @description Query multiple subsets
-#'
-#' @importFrom dplyr `%>%` tribble mutate filter left_join select any_of %>%
+#' @author Tim Fraser & Yan Guo
+#' @param .db database connection object for CAT GRAND database or CAT formatted MOVES output data
+#' @param .table Name of table in database object `.db`
+#' @param .filters Named Vector or List of inputted values for filtering.
+#' @param .vars Vector of variables desired
+#' @note .pollutant ID of the pollutant affected
+#' @note .by ID of Aggregation Level (overall = `16`, by sourcetype = `8`, by fueltype = `14`, by regulatory class = `12`)
+#' @note .sourcetype ID of Sourcetype
+#' @note .regclass ID of Regulatory Class
+#' @note .roadtype ID of Roadtype
+#' @note .fueltype ID of Fueltype
+#' @importFrom dplyr `%>%` tribble mutate filter left_join select any_of
+#' @importFrom base as.character
 #' @export
 
 query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .by = 17), .vars = c("vmt", "vehicles", "sourcehours", "starts")){
@@ -22,7 +33,7 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
 
   if(.by <= 16){ bycombos = .by }else{
     bycombos = switch(
-      EXPR = as.character(.by),
+      EXPR = base::as.character(.by),
       "17" = c(16, 8),
       "18" = c(16, 12),
       "19" = c(16, 14),
@@ -31,7 +42,7 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
     )
   }
 
-  traits = tribble(
+  traits = dplyr::tribble(
     ~id, ~name,        ~var,
     16,  "overall",   'vehicles',
     8,  "sourcetype", 'vehicles',
@@ -40,7 +51,7 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
     12, "regclass",   'vehicles')
 
   # Get your traits
-  .traits = traits %>% filter(id %in% bycombos)
+  .traits = traits %>% dplyr::filter(id %in% bycombos)
 
   # .vars = c("vmt", "vehicles", "sourcehours", "starts")
 
@@ -65,8 +76,8 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
 
     # Get the overall version
     doverall = dall %>%
-      filter(by == 16) %>%
-      select(any_of(c("geoid", "year", "emissions", .vars)))
+      dplyr::filter(by == 16) %>%
+      dplyr::select(dplyr::any_of(c("geoid", "year", "emissions", .vars)))
 
     # Find any NON-16 aggregation levels
     byother = bycombos[bycombos != 16]
@@ -79,7 +90,7 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
         dextra = dall %>% query_aggregate(.by = i)
 
         # Join them dogether
-        doverall = doverall %>% left_join(by = c("year", "geoid"), y = dextra)
+        doverall = doverall %>% dplyr::left_join(by = c("year", "geoid"), y = dextra)
 
       }
     }
@@ -88,7 +99,7 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
     result = doverall
 
   # Otherwise, if by <= 16,
-  }else{ result = dall %>% select(any_of(c("geoid", "year", "emissions", .vars)))  }
+  }else{ result = dall %>% dplyr::select(dplyr::any_of(c("geoid", "year", "emissions", .vars)))  }
 
 
   # Return the result

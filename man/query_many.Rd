@@ -11,6 +11,31 @@ query_many(
   .vars = c("vmt", "vehicles", "sourcehours", "starts")
 )
 }
+\arguments{
+\item{.db}{database connection object for CAT GRAND database or CAT formatted MOVES output data}
+
+\item{.table}{Name of table in database object \code{.db}}
+
+\item{.filters}{Named Vector or List of inputted values for filtering.}
+
+\item{.vars}{Vector of variables desired}
+}
 \description{
 Query multiple subsets
+}
+\note{
+.pollutant ID of the pollutant affected
+
+.by ID of Aggregation Level (overall = \code{16}, by sourcetype = \code{8}, by fueltype = \code{14}, by regulatory class = \code{12})
+
+.sourcetype ID of Sourcetype
+
+.regclass ID of Regulatory Class
+
+.roadtype ID of Roadtype
+
+.fueltype ID of Fueltype
+}
+\author{
+Tim Fraser & Yan Guo
 }

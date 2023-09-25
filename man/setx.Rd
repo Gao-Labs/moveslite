@@ -18,3 +18,6 @@ setx(data, .newx, .cats = "year", .exclude = c("geoid"), .context = TRUE)
 \description{
 Function to create a data.frame of \code{newdata} to pass to a model, filling in the rest with default \code{data}.
 }
+\author{
+Tim Fraser & Yan Guo
+}

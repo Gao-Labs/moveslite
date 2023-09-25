@@ -12,8 +12,11 @@ estimate(data, .vars = c("vmt", "vehicles", "starts", "sourcehours", "year"))
 \item{.filters}{(vector/list) Named Vector or List of inputted values for filtering.}
 }
 \description{
-Estimate your area-specific model
+using statistical model to estimate the function
 }
 \note{
 An example filter would be: \code{.filters = c(.by = 8, .pollutant = 98, .sourcetype = 42)}
+}
+\author{
+Tim Fraser & Yan Guo
 }

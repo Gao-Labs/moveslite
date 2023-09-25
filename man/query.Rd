@@ -36,3 +36,6 @@ Query the CAT grand database for a specific slice of data.
 
 .fueltype ID of Fueltype
 }
+\author{
+Tim Fraser & Yan Guo
+}

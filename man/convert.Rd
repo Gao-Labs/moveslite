@@ -6,9 +6,18 @@
 \usage{
 convert(y, se, backtrans, df, ci = 0.95)
 }
+\arguments{
+\item{y}{(num) "y" = emission}
+
+\item{se}{(num) "se" = standard error}
+
+\item{backtrans}{(num) "backtrans" = backtransformation on the original single estimate}
+
+\item{ci}{(num) "ci" = Confident Interval, default = 0.95}
+}
 \description{
 Function to convert outcome predictions and standard error back from a transformation, using simulation.
 }
 \author{
-Tim Fraser
+Tim Fraser & Yan Guo
 }
