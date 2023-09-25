@@ -1,4 +1,5 @@
-#' @name query_many()
+#' @name query_many
+#' @title query_many
 #' @description Query multiple subsets
 #'
 #' @importFrom dplyr `%>%` tribble mutate filter left_join select any_of %>%

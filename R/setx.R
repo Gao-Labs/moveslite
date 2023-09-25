@@ -1,5 +1,5 @@
-#' @name setx()
-#'
+#' @name setx
+#' @title setx
 #' @param data data.frame of default data collected from CAT Grand Database
 #' @param .newx data.frame, named vector, or list of new values for 1 or more x variables.
 #' @param .cats vector of stratifying variable names, for which we should get estimates for each (eg. year)

@@ -1,10 +1,13 @@
-^moveslite\.Rproj$
+^.*\.Rproj$
 ^\.Rproj\.user$
-^LICENSE\.md$
 ^README\.Rmd$
 ^cran-comments\.md$
 ^diagnostics$
+^.Renviron
+^.Rhistory
 ^z$
 ^tim$
 ^dev.R
 ^workflow.R
+^z/make_data.R
+^z/keywords.csv

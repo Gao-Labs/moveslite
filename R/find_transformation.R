@@ -1,4 +1,5 @@
-#' @name find_transformation()
+#' @name find_transformation
+#' @title find_transformation
 #' @author Tim Fraser
 #' @description Function to find the transformation used on the model outcome, if any.
 #'

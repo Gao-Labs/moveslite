@@ -1,5 +1,5 @@
-#' @name project()
-#'
+#' @name project
+#' @title project
 #' @description Function to generate data.frames of projected emissions given
 #' @importFrom dplyr `%>%` select mutate as_tibble filter
 #' @export

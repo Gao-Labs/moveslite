@@ -2,12 +2,9 @@ Package: moveslite
 Title: What the Package Does (One Line, Title Case)
 Version: 0.0.0.9000
 Authors@R: 
-    person("Timothy", "Fraser", , "tmf77@cornell.edu",
-           role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-    person("Yan", "Guo", , "yg566@cornell.edu",
-           role = c("aut"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+  person("Fraser", "Timothy", , "tmf77@cornell.edu", role = c("aut", "cre"),
+  comment = c(ORCID = "0000-0002-4509-0244"))
+  person("Yan", "Guo", , "yg566@cornell.edu", role = c("aut"))
 Description: What the package does (one paragraph).
 License: MIT + file LICENSE
 Suggests: 

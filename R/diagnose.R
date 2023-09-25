@@ -1,4 +1,4 @@
-#' @name diagnose()
+#' @name diagnose
 #' @title Diagnostics for a model based on formula
 #' @description For any formula, evaluate its goodness of fit and return identifiers.
 #' @importFrom dplyr %>% mutate select

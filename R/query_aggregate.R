@@ -1,4 +1,5 @@
-#' @name query_aggregate()
+#' @name query_aggregate
+#' @title query_aggregate
 #' @description Aggregate/relabel a queried subset, to generate mode-mix / fuel-mix
 #'
 #' @param .db database connection object for CAT GRAND database or CAT formatted MOVES output data
@@ -33,7 +34,7 @@ query_aggregate = function(data, .by = 8){
       select(any_of(c("geoid", "year", "emissions", .traits$name, .traits$var)))
 
     # Gather variable names
-    key = read_csv("diagnostics/keywords.csv") %>%
+    key = keywords %>%
       filter(type %in% .traits$name) %>%
       select(id, label) %>%
       mutate(label = stringr::str_replace_all(label, "[\n]|[/]|[ ]+", "_") %>% stringr::str_replace_all("[_]+", "_") %>% tolower()) %>%
