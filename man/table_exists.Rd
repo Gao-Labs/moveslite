@@ -7,9 +7,9 @@
 table_exists(.db, .table = "d36109")
 }
 \arguments{
-\item{.db}{database connection object (from \code{DBI} package)}
+\item{.db}{database connection object (from `DBI` package)}
 
-\item{.table}{name of table potentially the supplied database \code{db}. Eg. d36109 is data for geoid 36109.}
+\item{.table}{name of table potentially the supplied database `db`. Eg. d36109 is data for geoid 36109.}
 }
 \description{
 Helper function to check if the supplied database table exists

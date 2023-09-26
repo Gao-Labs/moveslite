@@ -14,7 +14,7 @@ query_many(
 \arguments{
 \item{.db}{database connection object for CAT GRAND database or CAT formatted MOVES output data}
 
-\item{.table}{Name of table in database object \code{.db}}
+\item{.table}{Name of table in database object `.db`}
 
 \item{.filters}{Named Vector or List of inputted values for filtering.}
 
@@ -26,7 +26,7 @@ Query multiple subsets
 \note{
 .pollutant ID of the pollutant affected
 
-.by ID of Aggregation Level (overall = \code{16}, by sourcetype = \code{8}, by fueltype = \code{14}, by regulatory class = \code{12})
+.by ID of Aggregation Level (overall = `16`, by sourcetype = `8`, by fueltype = `14`, by regulatory class = `12`)
 
 .sourcetype ID of Sourcetype
 

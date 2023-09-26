@@ -15,7 +15,7 @@ estimate(data, .vars = c("vmt", "vehicles", "starts", "sourcehours", "year"))
 using statistical model to estimate the function
 }
 \note{
-An example filter would be: \code{.filters = c(.by = 8, .pollutant = 98, .sourcetype = 42)}
+An example filter would be: `.filters = c(.by = 8, .pollutant = 98, .sourcetype = 42)`
 }
 \author{
 Tim Fraser & Yan Guo

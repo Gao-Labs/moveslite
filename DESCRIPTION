@@ -2,10 +2,10 @@ Package: moveslite
 Type: Package
 Title: R Package for Speedy Transportation Emissions Estimates, based on Models of MOVES data
 Version: 0.1.0
-Authors@R: 
-  person("Fraser", "Timothy", , "tmf77@cornell.edu", role = c("aut", "cre"),
-    comment = c(ORCID = "0000-0002-4509-0244"))
+Authors@R: c(
+  person("Fraser", "Timothy", , "tmf77@cornell.edu", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-4509-0244")),
   person("Yan", "Guo", , "yg566@cornell.edu", role = c("aut"))
+  )
 Maintainer: Timothy Fraser <tmf77@cornell.edu>
 Description: System for speedy estimation of transportation emissions, using statistical learning on past MOVES outputs.
 License: `use_gpl3_license()`

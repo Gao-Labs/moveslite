@@ -16,7 +16,7 @@ setx(data, .newx, .cats = "year", .exclude = c("geoid"), .context = TRUE)
 \item{.exclude}{vector of variable names to exclude from data.frame - eg. id variables}
 }
 \description{
-Function to create a data.frame of \code{newdata} to pass to a model, filling in the rest with default \code{data}.
+Function to create a data.frame of `newdata` to pass to a model, filling in the rest with default `data`.
 }
 \author{
 Tim Fraser & Yan Guo

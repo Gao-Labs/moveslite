@@ -2,7 +2,7 @@
 % Please edit documentation in R/diagnose_many.R
 \name{diagnose_many}
 \alias{diagnose_many}
-\title{Diagnostics for \strong{many} models based on formula}
+\title{Diagnostics for **many** models based on formula}
 \usage{
 diagnose_many(
   .geoid = "36109",

@@ -7,11 +7,11 @@
 query_aggregate(data, .by = 8)
 }
 \arguments{
-\item{.by}{Aggregation level ID to filter to. (overall = \code{16}, by sourcetype = \code{8}, by fueltype = \code{14}, by regulatory class = \code{12})}
+\item{.by}{Aggregation level ID to filter to. (overall = `16`, by sourcetype = `8`, by fueltype = `14`, by regulatory class = `12`)}
 
 \item{.db}{database connection object for CAT GRAND database or CAT formatted MOVES output data}
 
-\item{.table}{Name of table in database object \code{.db}}
+\item{.table}{Name of table in database object `.db`}
 
 \item{.pollutant}{ID of the pollutant affected}
 }

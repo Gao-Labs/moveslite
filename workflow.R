@@ -1,10 +1,12 @@
 #' @name workflow
 #' @author Tim Fraser & Yan Guo
-#' @description Remind me how to use the package! Demonstrate an example workflow!
+#' @description Remind us how to use the package! Demonstrate an example workflow!
 
 #' @note Packages you need to load!
 library(dplyr)
 library(broom)
+library(DBI)
+library(RMySQL)
 
 #' These are the 5 core functions in `moveslite`.
 source("R/connect.R")    # connect() to a database
@@ -13,8 +15,6 @@ source("R/setx.R")       # setx() - create newdata from default data to feed to 
 source("R/estimate.R")   # estimate() a model of the default data
 source("R/project.R")    # generate predictions with project()
 
-library(DBI)
-library(RMySQL)
 
 #' Here's an example of their usage.
 # Connect to the 'data' database (tenatively your z/db.sqlite file)
