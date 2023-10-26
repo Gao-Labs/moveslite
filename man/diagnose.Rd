@@ -6,6 +6,20 @@
 \usage{
 diagnose(.data, .formula, .pollutant, .by, .geoid)
 }
+\arguments{
+\item{.data}{(char) ".data" = Cat-formatted MOVES grand data database}
+
+\item{.formula}{(char) ".formula" = Statistical formula}
+
+\item{.pollutant}{(char) ".pollutant" = type of pollutant want to make prediction on}
+
+\item{.by}{(char) ".by" = by = 16 = Overall, by = 8 = Sourcetype, by = 12 = Regulatory Class, by = 14 = Fueltype, by = 15 = Roadtype}
+
+\item{.geoid}{(char) ".geoid" = location/county name}
+}
 \description{
 For any formula, evaluate its goodness of fit and return identifiers.
+}
+\author{
+Tim Fraser & Yan Guo
 }

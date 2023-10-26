@@ -13,5 +13,5 @@ find_transformation(m)
 Function to find the transformation used on the model outcome, if any.
 }
 \author{
-Tim Fraser
+Tim Fraser & Yan Guo
 }

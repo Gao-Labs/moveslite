@@ -4,8 +4,16 @@
 #' @description
 #' This script generates data for use in the MOVESLite R package.
 #' This data will be saved within the R package when rendered.
+<<<<<<< HEAD:data/make_data.R
+#' @importFrom dplyr `%>%` filter collect %>% tbl
+
+
+library(dplyr)
+library(readr)
+=======
 #' @importFrom dplyr `%>%` tibble bind_rows
 #' @importFrom readr read_csv
+>>>>>>> 5e6c1bc3327c4c4a4f4c200540f51a6857e425c3:z/make_data.R
 
 # Possible transformations to search for
 pattern_log = paste0(

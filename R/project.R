@@ -1,7 +1,13 @@
 #' @name project
 #' @title project
 #' @description Function to generate data.frames of projected emissions given
-#' @importFrom dplyr `%>%` select mutate as_tibble filter
+#' @author Tim Fraser & Yan Guo
+#' @param m (character) "m" = model object
+#' @param data data.frame of default data collected from CAT Grand Database
+#' @param .newx data.frame, named vector, or list of new values for 1 or more x variables.
+#' @param .cats vector of stratifying variable names, for which we should get estimates for each (eg. year)
+#' @param .exclude vector of variable names to exclude from data.frame - eg. id variables
+#' @importFrom dplyr `%>%` select mutate as_tibble filter rowwise ungroup
 #' @export
 
 project = function(m, data, .newx, .cats = "year", .exclude = "geoid", .context = TRUE, .ci = 0.95){
@@ -52,17 +58,17 @@ project = function(m, data, .newx, .cats = "year", .exclude = "geoid", .context 
     # Take our custom estimates and..
     custom = custom %>%
       # For each estimate...
-      rowwise() %>%
+      dplyr::rowwise() %>%
       # Back-transform the estimates and the standard error
-      mutate(convert(y = emissions, se = se, df = df, backtrans = otype$backtrans, ci = .ci)) %>%
-      ungroup()
+      dplyr::mutate(convert(y = emissions, se = se, df = df, backtrans = otype$backtrans, ci = .ci)) %>%
+      dplyr::ungroup()
   }
 
   # Grab all default-derived data
-  benchmark = newdata %>% filter(type != "custom")
+  benchmark = newdata %>% dplyr::filter(type != "custom")
 
   # Bind back together
-  output = bind_rows(custom, benchmark)
+  output = dplyr::bind_rows(custom, benchmark)
 
   # Return output
   return(output)

@@ -1,8 +1,10 @@
 #' @name estimate
 #' @title Estimate your area-specific model
+#' @author Tim Fraser & Yan Guo
 #' @param .filters (vector/list) Named Vector or List of inputted values for filtering.
 #' @param .vars (character vector) Vector of variables to use as predictors.
-#' @importFrom dplyr %>% filter tbl
+#' @description using statistical model to estimate the function
+#' @importFrom dplyr `%>%` filter tbl
 #' @importFrom broom glance
 #' @importFrom stats lm
 #' @note An example filter would be: `.filters = c(.by = 8, .pollutant = 98, .sourcetype = 42)`
@@ -33,10 +35,10 @@ estimate = function(data, .vars = c("vmt", "vehicles", "starts", "sourcehours", 
   #   )
 
   # Use this best fitting model
-  formula = emissions ~ poly(vmt, 2) + poly(vehicles,2) + poly(sourcehours, 2) + poly(starts,2) + year
+  formula = log(emissions) ~ poly(log(vmt), 3) + vehicles + sourcehours + starts + poly(year,2)
 
   # Compute the model
-  m = data %>% lm(formula = formula)
+  m = data %>% stats::lm(formula = formula)
 
   # Return model.
   return(m)
