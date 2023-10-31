@@ -1,0 +1,35 @@
+"","formula_id","formula","8","14","16"
+"1",11,"log(emissions)~vmt + year",0.892021210255464,0.782732134258586,0.822923778305968
+"2",12,"log(emissions)~log(vmt) + year",0.879981229162302,0.8527800035916,0.831926227840206
+"3",13,"log(emissions)~vmt * year",0.931695077624201,0.904341542125193,0.937370749344998
+"4",14,"log(emissions)~log(vmt) * year",0.931956518973393,0.930000084837204,0.934807632159813
+"5",15,"log(emissions)~year + poly(vmt, 2)",0.935963911065358,0.850073599957336,0.913585501584797
+"6",16,"log(emissions)~year * poly(vmt, 2)",0.974415410733418,0.977655430546775,0.984909482205328
+"7",17,"log(emissions)~year + poly(log(vmt), 2)",0.935624528091581,0.872976685571858,0.861430709135076
+"8",18,"log(emissions)~year * poly(log(vmt), 2)",0.971330897344426,0.990858860625846,0.984850645669805
+"9",19,"log(emissions)~year + poly(vmt, 3)",0.944472987878713,0.952975862017644,0.979245315934929
+"10",20,"log(emissions)~year * poly(vmt, 3)",0.988839454213419,0.991517920412965,0.998493224984599
+"11",21,"log(emissions)~year + poly(log(vmt), 3)",0.955081449692931,0.984302872597492,0.980141063453248
+"12",22,"log(emissions)~year * poly(log(vmt), 3)",0.989715993346428,0.997643435894279,0.998913098701021
+"13",23,"log(emissions)~year + vmt + vehicles",0.922121295312917,0.921055234830504,0.955058410310559
+"14",24,"log(emissions)~year + log(vmt) + log(vehicles)",0.914077189622414,0.964638094262153,0.945414644907138
+"15",25,"log(emissions)~poly(log(vmt), 2) + log(vehicles) + year",0.96186747768522,0.975444885216922,0.940697286900015
+"16",26,"log(emissions)~poly(log(vmt), 2) + poly(log(vehicles), 2) + year",0.973215766984494,0.990746263052301,0.988738714051927
+"17",27,"log(emissions)~year + vmt + vehicles + sourcehours",0.92393674774038,0.970895314954384,0.962493833888814
+"18",28,"log(emissions)~year + log(vmt) + log(vehicles) + log(sourcehours)",0.915036935182254,0.977305142547776,0.942500769670134
+"19",29,"log(emissions)~poly(log(vmt), 2) + log(vehicles) + log(sourcehours) + year",0.962467780063612,0.978430398353952,0.938392943093103
+"20",30,"log(emissions)~poly(log(vmt), 2) + poly(log(vehicles), 2) + log(sourcehours) + year",0.974044975670863,0.991655366428671,0.9902383856846
+"21",31,"log(emissions)~poly(log(vmt), 2) + log(vehicles) + poly(log(sourcehours), 2) + year",0.966555710212094,0.995254785925092,0.996532611437858
+"22",32,"log(emissions)~poly(log(vmt), 2) + poly(log(vehicles), 2) + poly(log(sourcehours), 2) + year",0.981515521868432,0.997177174377294,0.998348492969561
+"23",33,"log(emissions)~year + vmt + vehicles + sourcehours + starts",0.923641591117046,0.978983444367247,0.960664428666845
+"24",34,"log(emissions)~year + log(vmt) + log(vehicles) + log(sourcehours) + log(starts)",0.919928140096317,0.984068781822885,0.94099006422774
+"25",35,"log(emissions)~poly(log(vmt), 2) + log(vehicles) + log(sourcehours) + log(starts) + year",0.962933392926501,0.987553176836225,0.943344090124015
+"26",36,"log(emissions)~poly(log(vmt), 2) + log(vehicles) + poly(log(sourcehours), 2) + log(starts) + year",0.967062540944637,0.996785917689336,0.996680595360223
+"27",37,"log(emissions)~poly(log(vmt), 2) + poly(log(vehicles), 2) + log(sourcehours) + log(starts) + year",0.975155457952528,0.99532171229785,0.990803568689237
+"28",38,"log(emissions)~poly(log(vmt), 2) + poly(log(vehicles), 2) + poly(log(sourcehours), 2) + log(starts) + year",0.982145670881067,0.9976615564098,0.998658360183947
+"29",39,"log(emissions)~poly(vmt, 2) + vehicles + poly(sourcehours, 2) + starts + year + year * vmt + year * sourcehours + vmt * sourcehours",0.982165749430346,0.997662915874141,0.999075972730238
+"30",40,"log(emissions)~poly(log(vmt), 2) + log(vehicles) + poly(log(sourcehours), 2) + log(starts) + year + year * log(vmt) + year * log(sourcehours) + log(vmt) * log(sourcehours)",0.98564290819764,0.998925320605919,0.998827502580295
+"31",41,"log(emissions)~year + poly(log(vmt), 2) + log(vehicles) + sqrt(sourcehours)",0.971722224169782,0.982327980093762,0.974337608738062
+"32",42,"log(emissions)~year + poly(log(vmt), 2) + sqrt(vehicles) + sqrt(sourcehours)",0.97123439697527,0.983120737249904,0.972990903907446
+"33",50,"log(emissions)~poly(year, 2) + poly(log(vmt), 3) + vehicles + sourcehours",0.993589590416388,0.995347148298462,0.993999548747908
+"34",51,"log(emissions)~poly(year, 2) + poly(log(vmt), 3) + vehicles + sourcehours + starts",0.993732252355523,0.996622535181422,0.996403984181819
