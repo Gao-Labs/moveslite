@@ -1,6 +1,6 @@
 #' @name 03_revised_table
 #' @description Investigate results of `diagnostics.sqlite` from `02_diagnostic_loop.R`
-
+#' @author Yan Guo and Tim Fraser
 
 
 # https://cran.r-project.org/web/packages/kableExtra/vignettes/awesome_table_in_html.html
@@ -12,7 +12,7 @@
 # Highlight on our final prefer formula, with an explanation for why it's good
 # - theoretical sense, high r2, and works for many situations
 
-
+# Overall by 'by' #################################
 ##########################################################################################################
 # the first plot with by = 16, 8 and 14
 ##########################################################################################################
@@ -51,6 +51,8 @@ stat_overall = db %>%
   arrange(desc(stat)) %>%
   mutate(rank = 1:n())
 
+
+
 # What percentage of models for each by exceed these thresholds?
 # Among all runs, count the number of geoid-sets where the explanatory power is...
 stat_by = db %>%
@@ -79,10 +81,10 @@ stat_by = db %>%
   mutate(by = forcats::fct_relevel(by, c("Overall", "By Fueltype", "By Source")),
          test = toupper(by))
 
+best = tibble(formula_id = 51, percent = 1, rank = 1)
 
 blocks = stat_by %>%
   left_join(by = "formula_id", y = stat_overall %>% select(formula_id, stat, rank))
-
 
 gg = ggplot() +
   geom_col(data = blocks,
@@ -91,6 +93,10 @@ gg = ggplot() +
              y = percent,
              fill = quality),
            position = "fill") +
+  geom_col(data = best,
+           mapping = aes(x = reorder(formula_id, -rank),
+                         y = percent),
+           fill = NA, color = "black") +
   coord_flip() +
   facet_wrap(
     facets = ~by, ncol = 3,
@@ -104,7 +110,7 @@ gg = ggplot() +
   theme(panel.border = element_blank(),
         strip.text.x = element_text(color = "#373737"),
         strip.background.x = element_blank(),
-        axis.text = element_text(color = "#373737"),
+        axis.text = element_text(size = 8, color = "#373737"),
         axis.title.x = element_text(color = "#373737"),
         axis.title.y = ggtext::element_markdown(color = "#373737"),
         legend.title = element_text(color = "#373737"),
@@ -122,18 +128,17 @@ gg = ggplot() +
         plot.title = element_text(hjust = 0.5)) +
   labs(y = "% of Sets",
        fill = "Accuracy\n(Adj. R2)",
-       title = paste0("Formula Accuracy in Sample by by = 16, 8 and 14"),
+       title = paste0("Formula Accuracy in Sample by Aggregation Level"),
        x = "Model Formula ID<br><sup>Sorted by Median Explanatory Power Overall</sup>")
 
 
+ggsave(gg, filename = "diagnostics/fig_grades_by_slice_test.png", dpi = 500, width = 10, height = 7)
+browseURL("diagnostics/fig_grades_by_slice_test.png")
 
-ggsave(gg, filename = "diagnostics/fig_grades_by_pollutant_test.png", dpi = 500, width = 10, height = 7)
-
-
+# By Pollutant ################################
 ##########################################################################################################
 # The second plot with six criterion pollutants CO, SO2, VOCC, CO2e, PM10, PM2.5
 ##########################################################################################################
-
 
 db = dbConnect(RSQLite::SQLite(), "diagnostics/diagnostics.sqlite")
 
@@ -144,10 +149,11 @@ criteria = tribble(
   100, "PM10",
   110, "PM2.5",
   31, "SO2",
-  33, "NO2",
+  6, "NO2",
   2, "CO"
-)
-
+) %>%
+  # Filter out VOC. I don't have confidence in VOC currently.
+  filter(id != 87)
 
 # What is the median / rank for each formula OVERALL?
 stat_overall = db %>%
@@ -191,12 +197,13 @@ stat_pollutant = db %>%
   mutate(percent = n / count,
          label = paste0(round(percent*100, 0), "%"))
 
-
-
 blocks = stat_pollutant %>%
-  left_join(by = "formula_id", y = stat_overall %>% select(formula_id, stat, rank))
+  left_join(by = "formula_id", y = stat_overall %>% select(formula_id, stat, rank)) %>%
+  mutate(pollutant = factor(pollutant,
+                            levels = c(98, 110, 100, 31, 6, 2),
+                            labels = c("CO2 Equivalent", "PM2.5", "PM10", "SO2", "NO2", "CO")))
 
-
+best = tibble(formula_id = 51, percent = 1, rank = 1)
 gg = ggplot() +
   geom_col(data = blocks,
            mapping = aes(
@@ -204,10 +211,14 @@ gg = ggplot() +
              y = percent,
              fill = quality),
            position = "fill") +
+  geom_col(data = best,
+           mapping = aes(x = reorder(formula_id, -rank),
+                         y = percent),
+           fill = NA, color = "black") +
   coord_flip() +
   facet_wrap(
-    facets = ~pollutant, ncol = 3,
-    labeller = as_labeller(purrr::set_names(criteria$name, criteria$id))
+    facets = ~pollutant, ncol = 3
+    #labeller = as_labeller(purrr::set_names(criteria$name, criteria$id))
   ) +
   shadowtext::geom_shadowtext(
     data = blocks, mapping = aes(x = factor(formula_id), y = n, group = quality, label = label),
@@ -217,7 +228,7 @@ gg = ggplot() +
   theme(panel.border = element_blank(),
         strip.text.x = element_text(color = "#373737"),
         strip.background.x = element_blank(),
-        axis.text = element_text(color = "#373737"),
+        axis.text = element_text(size = 8, color = "#373737"),
         axis.title.x = element_text(color = "#373737"),
         axis.title.y = ggtext::element_markdown(color = "#373737"),
         legend.title = element_text(color = "#373737"),
@@ -240,13 +251,14 @@ gg = ggplot() +
 
 
 
-ggsave(gg, filename = "diagnostics/fig_grades_by_pollutant_test.png", dpi = 500, width = 10, height = 11)
+ggsave(gg, filename = "diagnostics/fig_grades_by_pollutant_test.png",
+       dpi = 500, width = 10, height = 11)
+browseURL("diagnostics/fig_grades_by_pollutant_test.png")
 
 
 ##########################################################################################################
 # table1 with six criterion pollutants CO, SO2, VOCC, CO2e, PM10, PM2.5 with the best model (formula id == 51)
 ##########################################################################################################
-
 
 best_overall = stat_overall %>% filter(rank == 1)
 
