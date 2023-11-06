@@ -12,11 +12,91 @@
 # Highlight on our final prefer formula, with an explanation for why it's good
 # - theoretical sense, high r2, and works for many situations
 
-# Overall by 'by' #################################
-##########################################################################################################
-# the first plot with by = 16, 8 and 14
-##########################################################################################################
+# 0. Model Fit #####################################################
 
+library(DBI)
+library(RSQLite)
+library(readr)
+library(dplyr)
+
+db = dbConnect(RSQLite::SQLite(), "diagnostics/diagnostics.sqlite")
+
+
+criteria = tribble(
+  ~id, ~name,
+  16, "Overall",
+  8, "By sourcetype",
+  14, "By fueltype"
+)
+
+# What percentage of models for each by exceed these thresholds?
+# Among all runs, count the number of geoid-sets where the explanatory power is...
+stat_by = db %>%
+  tbl("samples") %>%
+  filter(by %in% !!criteria$id) %>%
+  group_by(formula_id, formula, by) %>%
+  summarize(
+    mean = mean(adjr, na.rm = TRUE),
+    sd = sd(adjr, na.rm = TRUE),
+    count = n(),
+    excellent = sum(adjr >= 0.99, na.rm = TRUE),
+    success = sum(adjr >= 0.95 & adjr < 0.99, na.rm = TRUE),
+    fine = sum(adjr >= 0.90 & adjr < 0.95, na.rm = TRUE),
+    warning = sum(adjr >= 0.80 & adjr < 0.90, na.rm = TRUE),
+    danger = sum(adjr < 0.80, na.rm = TRUE)
+    ) %>%
+  mutate(se = sd / sqrt(count),
+         bad = warning + danger) %>%
+  ungroup() %>%
+  collect() %>%
+  mutate(across(.cols = c(danger, warning, fine, success, excellent, bad),
+                .fns = ~paste0(round(.x / count*100, 0), "%")),
+         mean = round(mean, 3),
+         # If true standard error is less than 0.001, round it up to 0.001, to be conservative when reporting the table
+         se = if_else(se < 0.001, true= 0.001, false = se),
+         se = round(se, 3),
+         mean = paste0(round(mean * 100, 1), "%"),
+         se = paste0(round(se*100, 1), "%")) %>%
+  # mutate(by = by %>% dplyr::recode_factor(
+  #   "16" = "Overall",
+  #   "14" = "By Fueltype",
+  #   "8" =  "By Source")) %>%
+  # mutate(by = forcats::fct_relevel(by, c("Overall", "By Fueltype", "By Source"))) %>%
+  arrange(formula_id, by) %>%
+  # Add back in emissions at the front
+  mutate(formula = if_else(condition = formula_id < 11, true = paste0("emissions ~ ", formula), false = formula)) %>%
+  select(formula_id, formula, by, mean, se, bad, count) %>%
+  tidyr::pivot_wider(id_cols = c(formula_id, formula), names_from = by, values_from = c(mean, se, count, bad)) %>%
+  select(id = formula_id, formula,
+         mean_16, se_16, bad_16, count_16,
+         mean_8, se_8, bad_8, count_8,
+         mean_14, se_14, bad_14, count_14) %>%
+  readr::write_csv("diagnostics/table1.csv")
+
+library(stringr)
+library(knitr)
+library(kableExtra)
+
+readr::read_csv("diagnostics/table1.csv") %>%
+  kable(format = "html", col.names = c("ID", "Model Equation",
+                                       "Mean", "SE", "% Poor", "N",
+                                       "Mean", "SE", "% Poor", "N",
+                                       "Mean", "SE", "% Poor", "N")) %>%
+  kable_paper(bootstrap_options = c("striped", "condensed"), full_width = FALSE) %>%
+  kable_styling() %>%
+  column_spec(1, bold = TRUE, border_right = TRUE) %>%
+  column_spec(2, bold = FALSE, border_right = TRUE) %>%
+  kableExtra::add_header_above(header = c(" " = 2, "Overall" = 4, "By Source" = 4, "By Fueltype" = 4)) %>%
+  kableExtra::add_footnote(
+    notation = "none",
+    label = "Mean shows mean adjusted R-squared over N models, \nwith a standard error of SE.") %>%
+  save_kable(file = "diagnostics/table1.png", density = 300)
+
+browseURL("diagnostics/table1.png")
+
+
+# 1. Overall by 'by' #################################
+# the first plot with by = 16, 8 and 14
 
 library(DBI)
 library(RSQLite)
@@ -135,10 +215,8 @@ gg = ggplot() +
 ggsave(gg, filename = "diagnostics/fig_grades_by_slice_test.png", dpi = 500, width = 10, height = 7)
 browseURL("diagnostics/fig_grades_by_slice_test.png")
 
-# By Pollutant ################################
-##########################################################################################################
+# 2. By Pollutant ################################
 # The second plot with six criterion pollutants CO, SO2, VOCC, CO2e, PM10, PM2.5
-##########################################################################################################
 
 db = dbConnect(RSQLite::SQLite(), "diagnostics/diagnostics.sqlite")
 
@@ -256,9 +334,49 @@ ggsave(gg, filename = "diagnostics/fig_grades_by_pollutant_test.png",
 browseURL("diagnostics/fig_grades_by_pollutant_test.png")
 
 
-##########################################################################################################
-# table1 with six criterion pollutants CO, SO2, VOCC, CO2e, PM10, PM2.5 with the best model (formula id == 51)
-##########################################################################################################
+# 3. Table of 6 criterion pollutants  #################################
+# CO, SO2, VOCC, CO2e, PM10, PM2.5 with the best model (formula id == 51)
+
+
+library(dplyr)
+library(DBI)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+
+db = dbConnect(RSQLite::SQLite(), "diagnostics/diagnostics.sqlite")
+
+criteria = tribble(
+  ~id, ~name,
+  98, "CO2e",
+  87, "VOC",
+  100, "PM10",
+  110, "PM2.5",
+  31, "SO2",
+  6, "NO2",
+  2, "CO"
+) %>%
+  # Filter out VOC. I don't have confidence in VOC currently.
+  filter(id != 87)
+
+# What is the median / rank for each formula OVERALL?
+stat_overall = db %>%
+  tbl("samples") %>%
+  filter(pollutant %in% !!criteria$id) %>%
+  group_by(formula_id, formula) %>%
+  summarize(stat = median(adjr, na.rm = TRUE),
+            valid = sum(adjr >= 0.90, na.rm = TRUE),
+            test = n()
+  ) %>%
+  collect()
+
+stat_overall = stat_overall %>%
+  mutate(valid = valid/test) %>%
+  ungroup() %>%
+  mutate(valid = paste0(round(valid*100, 0), "%")) %>%
+  arrange(desc(stat)) %>%
+  mutate(rank = 1:n()) %>%
+  subset(select = -c(test) )
 
 best_overall = stat_overall %>% filter(rank == 1)
 
@@ -291,6 +409,7 @@ cis = values %>%
             upper = quantile(stat, probs = 0.975, na.rm = TRUE)) %>%
   ungroup()
 
+
 s = values %>%
   group_by(pollutant) %>%
   summarize(stat = median(adjr, na.rm = TRUE)) %>%
@@ -301,9 +420,37 @@ s = values %>%
                 .fns = ~round(.x*100, 1))) %>%
   mutate(label = paste0(stat, "%"))
 
-s
+tab = s %>%
+  select(pollutant_name, label, lower, upper, stat)
+
+tab %>% readr::write_csv("diagnostics/table_cis.csv")
 
 
+rm(list = ls())
+
+library(knitr)
+library(kableExtra)
+
+tab = readr::read_csv("diagnostics/table_cis.csv")
+
+tab %>%
+  select(-stat) %>%
+  kable(format = "html", col.names = c("Pollutant", "Median", "2.5% CI", "97.5% CI")) %>%
+  kable_paper(bootstrap_options = c("striped", "condensed"), full_width = FALSE) %>%
+  kable_styling() %>%
+  column_spec(1, bold = TRUE, border_right = TRUE) %>%
+  kableExtra::add_header_above(header = c(" ", "Expected Accuracy Range\nfor Best Model (Overall)" = 3)) %>%
+  kableExtra::add_footnote(
+    notation = "none",
+    label = "Statistics depict adjusted R-squared, \n with bootstrapped confidence intervals (n = 1000 reps).") %>%
+  # column_spec(2, image = spec_pointrange(
+  #   x = tab$stat,
+  #   xmin = tab$lower,
+  #   xmax = tab$upper,
+  #   vline = 100)) %>%
+  save_kable(file = "diagnostics/table_cis.png", density = 300)
+
+browseURL("diagnostics/table_cis.png")
 dbDisconnect(db); rm(list = ls()); gc()
 
 
