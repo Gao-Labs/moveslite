@@ -73,6 +73,8 @@ stat_by = db %>%
          mean_14, se_14, bad_14, count_14) %>%
   readr::write_csv("diagnostics/table1.csv")
 
+
+dbDisconnect(db)
 library(stringr)
 library(knitr)
 library(kableExtra)
@@ -89,7 +91,8 @@ readr::read_csv("diagnostics/table1.csv") %>%
   kableExtra::add_header_above(header = c(" " = 2, "Overall" = 4, "By Source" = 4, "By Fueltype" = 4)) %>%
   kableExtra::add_footnote(
     notation = "none",
-    label = "Mean shows mean adjusted R-squared over N models, \nwith a standard error of SE.") %>%
+    label = "Mean shows mean adjusted R-squared over N models, \nwith a standard error of SE.\n% Poor shows percentage of models with poor fit, meaning less than 90% accuracy.") %>%
+  cat(file = "diagnostics/table1.html")
   save_kable(file = "diagnostics/table1.png", density = 300)
 
 browseURL("diagnostics/table1.png")
@@ -448,6 +451,7 @@ tab %>%
   #   xmin = tab$lower,
   #   xmax = tab$upper,
   #   vline = 100)) %>%
+  cat("diagnostics/table_cis.html")
   save_kable(file = "diagnostics/table_cis.png", density = 300)
 
 browseURL("diagnostics/table_cis.png")
