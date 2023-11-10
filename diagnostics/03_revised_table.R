@@ -451,11 +451,160 @@ tab %>%
   #   xmin = tab$lower,
   #   xmax = tab$upper,
   #   vline = 100)) %>%
-  cat("diagnostics/table_cis.html")
+  cat(file = "diagnostics/table_cis.html")
   save_kable(file = "diagnostics/table_cis.png", density = 300)
 
 browseURL("diagnostics/table_cis.png")
 dbDisconnect(db); rm(list = ls()); gc()
 
 
+# 4. Correlation #########################
 
+library(dplyr)
+library(DBI)
+library(broom)
+library(stringr)
+source("R/connect.R")
+db = connect("data")
+
+# Total counties covered in our assessment
+tibble(table = db %>% dbListTables() ) %>%
+  filter(nchar(table) == 6) %>%
+  summarize(count = n())
+
+# Total Counties in US
+tigris::fips_codes %>%
+  count()
+
+# Total states covered in our county assessment
+tibble(table = db %>% dbListTables() ) %>%
+  filter(nchar(table) == 6) %>%
+  mutate(state = str_sub(table, 1,3)) %>%
+  select(state) %>%
+  distinct() %>%
+  count()
+
+# FIPS code for New York County (Manhattan) is 36061
+tigris::fips_codes %>%
+  filter(county == "New York County")
+
+.geoid = "36061"
+dat = db %>%
+  tbl(paste0("d",.geoid)) %>%
+  filter(pollutant == 98, year == 2020, geoid == !!.geoid) %>%
+  collect()
+
+row1 = dat %>% filter(by == 16) %>% mutate(aggregation = "Overall", category = "Overall")
+row2 = dat %>% filter(by == 8 & sourcetype == 21) %>% mutate(aggregation = "By Source", category = "Passenger Vehicles")
+row3 = dat %>% filter(by == 14 & fueltype == 1) %>% mutate(aggregation = "By Fuel Type", category = "Gasoline")
+
+
+tab = bind_rows(row1, row2, row3, .id = "subset") %>%
+  mutate(subset = paste0("subset_", subset)) %>%
+  select(subset, year, geoid, pollutant, aggregation, category, emissions:starts) %>%
+  mutate(across(.cols = c(emissions:starts), .fns = ~scales::number(.x, decimal.mark = ".", big.mark = ","))) %>%
+  tidyr::pivot_longer(
+    cols = -c(subset),
+    names_to = "var", values_to = "value",
+    values_transform = list(value = as.character)) %>%
+  tidyr::pivot_wider(id_cols = var, names_from = subset, values_from = value) %>%
+  mutate(unit = case_when(var == "emissions" ~ "tons",
+                          var == 'vmt' ~ "miles",
+                          var == "vehicles" ~ "vehicles",
+                          var == "sourcehours" ~ "hours",
+                          var == "starts" ~ "times",
+                          var == "year" ~ "years",
+                          TRUE ~ "-")) %>%
+  mutate(label = var %>% dplyr::recode_factor(
+    "geoid" = "County FIPS Code",
+    "pollutant" = "Pollutant ID",
+    "aggregation" = "Aggregation Level",
+    "category" = "Category",
+    "emissions" = "Emissions",
+    "vmt" = "Vehicle Miles Traveled",
+    "vehicles" = "Vehicle Population",
+    "sourcehours" = "Source Hours Driven",
+    "starts" = "Vehicle Starts",
+    "year" = "Year"
+    )) %>%
+  arrange(label) %>%
+  select(label, unit, var, contains("subset_"))
+
+tab %>%
+  kable(format = "html", col.names = c("Variable", "Unit",  "Abbreviation",  "Subset A", "Subset B", " Subset C"),
+        align = c("l", "c", "l", "c", "c", "c")) %>%
+  kable_paper(bootstrap_options = c("striped", "condensed"), full_width = FALSE) %>%
+  kable_styling() %>%
+  column_spec(1, bold = FALSE, italic = FALSE, border_right = TRUE) %>%
+  column_spec(2, bold = FALSE, italic = TRUE, border_right = TRUE) %>%
+  column_spec(3, bold = FALSE, italic = FALSE, border_right = TRUE) %>%
+  kableExtra::group_rows(group_label = "Identifiers", start_row = 1, end_row = 2) %>%
+  kableExtra::group_rows(group_label = "Subset Traits", start_row = 3, end_row = 4) %>%
+  kableExtra::group_rows(group_label = "Metrics", start_row = 5, end_row = 9) %>%
+  kableExtra::group_rows(group_label = "Time (14 years per subset)", start_row = 10, end_row = 10) %>%
+  kableExtra::add_header_above(header = c("MOVES Subset Variables" = 3, "1 Year, 3 Example Subsets" = 3)) %>%
+  kableExtra::add_footnote(
+    notation = "none",
+    label = paste0(
+      "* Metrics rounded in table for visual clarity.",
+      "** Each subset refers to CO2 Equivalent emissions in New York County (Manhattan) in 2020.",
+      "*** We define 1 subset as a county-pollutant-aggregation-category set. 1 subset has t = 14 years.",
+      collapse = "\n ")
+    ) %>%
+  cat(file = "diagnostics/table_example.html")
+
+browseURL("diagnostics/table_example.html")
+
+
+dbDisconnect(db)
+
+db = DBI::dbConnect(drv = RSQLite::SQLite(), "diagnostics/diagnostics.sqlite")
+
+
+criteria = tribble(
+    ~id, ~name,
+    98, "CO2e",
+    87, "VOC",
+    100, "PM10",
+    110, "PM2.5",
+    31, "SO2",
+    6, "NO2",
+    2, "CO"
+  ) %>%
+  # Filter out VOC. I don't have confidence in VOC currently.
+  filter(id != 87)
+
+db %>%
+  tbl("runs") %>%
+  filter(pollutant %in% !!criteria$id) %>%
+  count()
+
+
+
+db %>%
+  tbl("samples") %>%
+  filter(pollutant %in% !!criteria$id) %>%
+  filter(by ==  8 | by == 16 | by == 14) %>%
+  count()
+
+db %>%
+  tbl("samples") %>%
+  select(geoid) %>%
+  distinct() %>%
+  count()
+
+db %>%
+  tbl("samples") %>%
+  filter(pollutant %in% !!criteria$id) %>%
+  group_by(pollutant, set_id) %>%
+  count()
+
+# For each subset we took a random sample of counties
+
+db %>%
+  tbl("samples") %>%
+  filter(pollutant %in% !!criteria$id) %>%
+  group_by(pollutant, set_id, formula_id) %>%
+  count() %>%
+  ungroup() %>%
+  summarize(mean = mean(n))

@@ -101,14 +101,17 @@ bind_rows(
   keywords %>% filter(type == "regclass") %>% select(type = id) %>% mutate(by = 15),
   tibble(type = 0, by = 16)
 ) %>%
-  tidyr::expand_grid(
-    pollutant = keywords %>% filter(type == "pollutant") %>% with(id)
-  ) %>%
+  tidyr::expand_grid(pollutant = keywords %>% filter(type == "pollutant") %>% with(id)) %>%
   # Add a unique id for each set
   mutate(set_id = 1:n()) %>%
   # Save to file
   write_csv("diagnostics/sets.csv")
 
+# Get our revised set list, keeping the unique set ids.
+read_csv("diagnostics/sets.csv") %>%
+  filter(pollutant %in% c(98, 100, 110, 31, 6, 2),
+         by %in% c(8, 16, 14)) %>%
+  write_csv("diagnostics/sets_final.csv")
 
 # Get all geoids
 source("R/connect.R")
@@ -127,6 +130,12 @@ read_csv("diagnostics/sets.csv") %>%
   mutate(run_id = 1:n()) %>%
   saveRDS("diagnostics/runs.rds")
 
+# Get final subset of runs
+read_rds("diagnostics/runs.rds") %>%
+  filter(pollutant %in% c(98, 100, 110, 31, 6, 2),
+       by %in% c(8, 16, 14)) %>%
+  saveRDS("diagnostics/runs_final.rds")
+
 # Clear environment and cache
 rm(list = ls()); gc()
 
@@ -144,11 +153,13 @@ read_rds("diagnostics/runs.rds") %>%
   mutate(run_id = 1:n()) %>%
   saveRDS("diagnostics/runs_sample.rds")
 
+# For every set, For every census division, we randomly sampled at max 10 counties.
 
-
-
+# Get final set of samples runs, subset to the ones for our study
+read_rds("diagnostics/runs_sample.rds") %>%
+  filter(pollutant %in% c(98, 100, 110, 31, 6, 2),
+         by %in% c(8, 16, 14)) %>%
+  saveRDS("diagnostics/runs_sample_final.rds")
 
 # For each set, we took a random sample of 10 cells from within each census division.
 rm(list = ls())
-
-
