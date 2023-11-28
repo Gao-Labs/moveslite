@@ -4,7 +4,7 @@
 \alias{connect}
 \title{Connect to MySQL database Function}
 \usage{
-connect(.type = "data")
+connect(.type = "granddata")
 }
 \arguments{
 \item{.type}{(character) "data" = Cat-formatted MOVES grand data database}

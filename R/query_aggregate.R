@@ -36,10 +36,14 @@ query_aggregate = function(data, .by = 8){
     # Gather variable names
     key = keywords %>%
       dplyr::filter(type %in% .traits$name) %>%
-      dplyr::select(id, label) %>%
-      dplyr::mutate(label = stringr::str_replace_all(label, "[\n]|[/]|[ ]+", "_") %>% stringr::str_replace_all("[_]+", "_") %>% base::tolower()) %>%
+      select(id, label) %>%
+      dplyr::mutate(
+        label = label %>%
+          stringr::str_replace_all(pattern = c("[\n]" = "_", "[/]" = "_", "[\r]" = "_", "[ ]+" = "_", "[-]" = "_")) %>%
+          stringr::str_replace_all("[_]+", "_") %>% base::tolower()) %>%
       with(purrr::set_names(.$label, .$id)) %>%
       as.list()
+
 
     # Aggregate these extra variables if necessary.
     dextra = dagg %>%

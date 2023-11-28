@@ -23,10 +23,17 @@ query = function(
     .filters = c(.by = 16, .pollutant = 98),
     .vars = c("year", "vmt", "vehicles", "starts", "sourcehours")){
 
+  # Testing data
+  #.db = connect("anydata")
+  # .table = "granddata.d36109"
+  # .filters = c(.by = 16, .pollutant = 98)
+  # .vars = c("year", "vmt", "vehicles", "starts", "sourcehours")
+
   # Convert vector into a list object.
   f = .filters %>% base::as.list()
   # Get filtering variables named in your list
   v = base::names(f)
+
 
   # Find Specific table
   q = .db %>% dplyr::tbl(.table)

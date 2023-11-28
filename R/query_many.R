@@ -13,7 +13,6 @@
 #' @note .roadtype ID of Roadtype
 #' @note .fueltype ID of Fueltype
 #' @importFrom dplyr `%>%` tribble mutate filter left_join select any_of
-#' @importFrom base as.character
 #' @export
 
 query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .by = 17), .vars = c("vmt", "vehicles", "sourcehours", "starts")){
@@ -30,6 +29,7 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
 
   # Record original by submission
   .by = .filters$.by
+
 
   if(.by <= 16){ bycombos = .by }else{
     bycombos = switch(
@@ -89,7 +89,7 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
         # Get the aggregate/relabeled data
         dextra = dall %>% query_aggregate(.by = i)
 
-        # Join them dogether
+        # Join them together
         doverall = doverall %>% dplyr::left_join(by = c("year", "geoid"), y = dextra)
 
       }
@@ -101,6 +101,7 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
   # Otherwise, if by <= 16,
   }else{ result = dall %>% dplyr::select(dplyr::any_of(c("geoid", "year", "emissions", .vars)))  }
 
+  result = result %>% ungroup()
 
   # Return the result
   return(result)

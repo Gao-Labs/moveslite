@@ -4,16 +4,46 @@
 #' @description
 #' This script generates data for use in the MOVESLite R package.
 #' This data will be saved within the R package when rendered.
-<<<<<<< HEAD:data/make_data.R
 #' @importFrom dplyr `%>%` filter collect %>% tbl
 
 
 library(dplyr)
 library(readr)
-=======
 #' @importFrom dplyr `%>%` tibble bind_rows
 #' @importFrom readr read_csv
->>>>>>> 5e6c1bc3327c4c4a4f4c200540f51a6857e425c3:z/make_data.R
+
+
+subset =  keywords %>% select(id, term, type) %>%
+  filter(type %in% c("sourcetype", "fueltype", "regclass", "roadtype")) %>%
+  mutate(by = type %>% dplyr::recode(
+    "sourcetype" = 8,
+    "fueltype" = 14,
+    "regclass" = 12,
+    "roadtype" = 15
+  )) %>%
+  mutate(type = type %>% dplyr::recode_factor(
+    "sourcetype" = "By Source",
+    "fueltype" = "By Fuel",
+    "regclass" = "By Regulatory Class",
+    "roadtype" = "By Roadtype"
+  )) %>%
+  mutate(id = paste0(by, ".", id)) %>%
+  split(.$type) %>%
+  map(~setNames(.$id, .$term))
+
+# Make a list of all type options, bound in a list
+choices_aggregation = list(
+  "Overall" = c(
+    "Overall" = "16",
+    "% Mode Share" = "17",
+    "% Regulatory Class" = "18",
+    "% Fueltype" = "19",
+    "% Roadtype" = "20",
+    "% Mode & Fuel" = "21")
+) %>%
+  append(subset)
+
+save(choices_aggregation, file = "data/choices_aggregation.rda")
 
 # Possible transformations to search for
 pattern_log = paste0(
@@ -83,6 +113,7 @@ transformations = bind_rows(
 save(transformations, file = "data/transformations.rda")
 
 keywords = readr::read_csv("z/keywords.csv")
+keywords %>% View()
 save(keywords, file = "data/keywords.rda")
 
 rm(list = ls())

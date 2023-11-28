@@ -11,3 +11,4 @@
 ^workflow.R
 ^z/make_data.R
 ^z/keywords.csv
+^app.R

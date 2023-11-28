@@ -8,14 +8,14 @@
 #' @importFrom base Sys.getenv as.integer
 #' @export
 
-connect = function(.type = "data"){
+connect = function(.type = "granddata"){
   #require(DBI)
   #require(RSQLite)
 
   switch(
     EXPR = .type,
 
-    "data" = {
+    "granddata" = {
       # On Tim's computer:
       conn = DBI::dbConnect(
         drv = RMySQL::MySQL(),
@@ -44,7 +44,20 @@ connect = function(.type = "data"){
         host = base::Sys.getenv("CATSERVER_HOST"),
         port = base::as.integer(base::Sys.getenv("CATSERVER_PORT")),
         dbname = "cov")
+    },
+
+    "orderdata" = {
+
+      conn = DBI::dbConnect(
+        drv = RMySQL::MySQL(),
+        username = base::Sys.getenv("CATSERVER_ORDERDATA_USERNAME"),
+        password = base::Sys.getenv("CATSERVER_ORDERDATA_PASSWORD"),
+        host = base::Sys.getenv("CATSERVER_HOST"),
+        port = base::as.integer(base::Sys.getenv("CATSERVER_PORT")),
+        dbname = "orderdata"
+      )
     }
+
   )
   return(conn)
 }
