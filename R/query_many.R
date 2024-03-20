@@ -33,7 +33,7 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
 
   if(.by <= 16){ bycombos = .by }else{
     bycombos = switch(
-      EXPR = base::as.character(.by),
+      EXPR = as.character(.by),
       "17" = c(16, 8),
       "18" = c(16, 12),
       "19" = c(16, 14),

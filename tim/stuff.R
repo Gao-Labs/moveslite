@@ -57,7 +57,7 @@ filter_query = paste0(filter_where, filter_statements, collapse = " ")
 select_query = paste0("SELECT * FROM ", .table, " ")
 
 
-#  dplyr::any_of(base::unique(c("geoid", "year", "emissions", .vars)))
+#  dplyr::any_of(unique(c("geoid", "year", "emissions", .vars)))
 
 paste0(
   "WITH ",

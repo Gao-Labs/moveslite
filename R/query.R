@@ -30,9 +30,9 @@ query = function(
   # .vars = c("year", "vmt", "vehicles", "starts", "sourcehours")
 
   # Convert vector into a list object.
-  f = .filters %>% base::as.list()
+  f = .filters %>% as.list()
   # Get filtering variables named in your list
-  v = base::names(f)
+  v = names(f)
 
 
   # Find Specific table
@@ -58,7 +58,7 @@ query = function(
 
 
   # Subset to just the variables needed
-  q = q %>% dplyr::select(dplyr::any_of(base::unique(c("geoid", "year", "emissions", .vars))))
+  q = q %>% dplyr::select(dplyr::any_of(unique(c("geoid", "year", "emissions", .vars))))
 
   # Collect the data
   data = q %>% dplyr::collect()

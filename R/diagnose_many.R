@@ -56,7 +56,7 @@ diagnose_many = function(.geoid = "36109", .pollutant = 98, .by = 8, .type = 42,
     purrr::keep(~sum(!is.na(.x$adjr)) > 0)
 
   # If there are ANY remaining results,
-  result = if(base::length(tab) > 0){
+  result = if(length(tab) > 0){
     tab %>%
       # Bind a list of data.frames together
       dplyr::bind_rows(.id = "formula_id") %>%

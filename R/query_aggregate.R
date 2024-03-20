@@ -40,7 +40,7 @@ query_aggregate = function(data, .by = 8){
       dplyr::mutate(
         label = label %>%
           stringr::str_replace_all(pattern = c("[\n]" = "_", "[/]" = "_", "[\r]" = "_", "[ ]+" = "_", "[-]" = "_")) %>%
-          stringr::str_replace_all("[_]+", "_") %>% base::tolower()) %>%
+          stringr::str_replace_all("[_]+", "_") %>% tolower()) %>%
       with(purrr::set_names(.$label, .$id)) %>%
       as.list()
 

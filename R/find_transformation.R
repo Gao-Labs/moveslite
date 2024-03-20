@@ -13,7 +13,7 @@ find_transformation = function(m){
   load("data/transformations.rda")
 
   # Get first part of model formula (before ~)
-  outcome = base::names(m$model)[1]
+  outcome = names(m$model)[1]
 
   # Check if the outcome formula has any transformations
   outcometype =  dplyr::case_when(
