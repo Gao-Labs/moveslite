@@ -7,7 +7,6 @@
 #' @param .exclude vector of variable names to exclude from data.frame - eg. id variables
 #' @description Function to create a data.frame of `newdata` to pass to a model, filling in the rest with default `data`.
 #' @importFrom dplyr `%>%` filter mutate across if_any if_all any_of all_of
-#' @importFrom base is.vector as.list is.list names min
 #' @importFrom stats approxfun
 
 setx = function(data, .newx, .cats = "year", .exclude = c("geoid"), .context = TRUE){

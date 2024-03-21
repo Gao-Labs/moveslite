@@ -5,7 +5,6 @@
 #' @param .type (character) "data" = Cat-formatted MOVES grand data database
 #' @importFrom DBI dbConnect dbDisconnect
 #' @importFrom RMySQL MySQL
-#' @importFrom base Sys.getenv as.integer
 #' @export
 
 connect = function(.type = "granddata"){

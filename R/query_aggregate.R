@@ -11,7 +11,6 @@
 #' @importFrom readr read_csv
 #' @importFrom dplyr `%>%` recode tribble mutate filter summarize group_by ungroup any_of across
 #' @importFrom tidyr pivot_wider
-#' @importFrom base tolower
 #' @export
 
 query_aggregate = function(data, .by = 8){

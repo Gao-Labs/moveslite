@@ -312,7 +312,6 @@ query_download = function(.db, .table = "d36109", .pollutant = 98,
 #' @importFrom dplyr %>% tibble
 #' @importFrom stringr str_detect
 #' @importFrom stats rnorm sd quantile
-#' @importFrom base parse eval
 
 convert = function(y, se, backtrans, df, ci = 0.95){
   # Execute the backtransformation on the original single estimate
@@ -353,7 +352,7 @@ qi_scenario = function(input, ydata){
   .scenario_name_benchmark = input$scenario_benchmark
   .scenario_name_yours = input$scenario_yours
 
-  .geoid_label = read_rds("data/calculator/areas.rds") %>% filter(geoid == input$geoid) %>% with(label)
+  .geoid_label = readr::read_rds("data/calculator/areas.rds") %>% filter(geoid == input$geoid) %>% with(label)
 
   # Load Keywords
   load("data/moveslite/keywords.rda")
@@ -452,7 +451,6 @@ qi_scenario = function(input, ydata){
 #'
 #' @description
 #' Visualize Mulitple Scenarios as a line plot
-
 h_scenario = function(data){
 
   require(ggplot2)

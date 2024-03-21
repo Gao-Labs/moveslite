@@ -11,7 +11,6 @@
 #' @importFrom DBI dbDisconnect dbConnect
 #' @importFrom purrr possibly map keep
 #' @importFrom stats lm
-#' @importFrom base length
 #' @importFrom broom glance
 #' @export
 

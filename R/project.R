@@ -13,17 +13,22 @@
 project = function(m, data, .newx, .cats = "year", .exclude = "geoid", .context = TRUE, .ci = 0.95){
   # Example
 
-  #.newx = tibble(year = 2020, vmt = 200)
+  # .newx = tibble(year = 2020, vmt = 2276674)
+  # m = model()
+  # data = default()
+  # .newx = newx()
 
   # .exclude = "geoid"
-  # .outcome = "emissions"
-  # .context = TRUE
+  # .context = FALSE
   # .cats = "year"
+  # .ci = 0.95
 
-  source("R/setx.R")
-  source("R/convert.R")
-  source("R/find_transformation.R")
-  load("data/transformations.rda")
+  # .outcome = "emissions"
+
+  # source("R/setx.R")
+  # source("R/convert.R")
+  # source("R/find_transformation.R")
+  # load("data/transformations.rda")
 
   # Generate newdata for comparison
   newdata = setx(data, .newx, .cats = .cats, .exclude = .exclude, .context = .context)

@@ -15,7 +15,7 @@
 #'
 #' @importFrom dplyr `%>%` tbl filter collect any_of
 #' @importFrom DBI dbConnect dbDisconnect
-#' @importFrom base name as.list unique
+#' @importFrom purrr possibly
 #' @export
 
 query = function(
@@ -34,9 +34,24 @@ query = function(
   # Get filtering variables named in your list
   v = names(f)
 
+  # Write a function to try to get that table
+  try_tbl = purrr::possibly(.f = ~.db %>% tbl(...), otherwise = NULL)
 
   # Find Specific table
-  q = .db %>% dplyr::tbl(.table)
+  # q = .db %>% dplyr::tbl(.table)
+  q = try_tbl(.table)
+
+
+  # If the query is now null, return a blank data.frame
+  if(is.null(q)){
+    nope = tibble(by = NA_integer_, year = NA_integer_, geoid = NA_character_,
+                  pollutant = NA_integer_, emission = NA_real_, vmt = NA_real_, vehicles = NA_real_,
+                  sourcehours = NA_real_, starts = NA_real_) %>%
+      slice(0)
+    return(nope)
+  }else{
+
+  # If the query is NOT null....
 
   # Filter by pollutant
   if(".pollutant" %in% v){  q = q %>% dplyr::filter(pollutant  %in% !!f$.pollutant)  }
@@ -65,4 +80,5 @@ query = function(
 
   # Return the output
   return(data)
+  }
 }

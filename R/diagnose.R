@@ -11,7 +11,6 @@
 #' @importFrom purrr possibly
 #' @importFrom stats lm
 #' @importFrom broom glance
-#' @importFrom base as.character
 #' @export
 
 diagnose <- function(.data, .formula, .pollutant, .by, .geoid) {

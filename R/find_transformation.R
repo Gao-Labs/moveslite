@@ -5,7 +5,6 @@
 #' @param m model object
 #' @importFrom dplyr case_when
 #' @importFrom stringr str_detect
-#' @importFrom base names
 
 find_transformation = function(m){
 

@@ -27,6 +27,12 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
   # .table = "d36109"
   # .vars = c("vmt", "vehicles", "sourcehours", "starts")
 
+  # Testing values
+  # .filters = list(.pollutant = 98, .by = 8, .sourcetype = 41)
+  # .db = connect("granddata")
+  # .vars = c("vmt", "vehicles", "sourcehours", "starts")
+  # .table = "d36109"
+
   # Record original by submission
   .by = .filters$.by
 
@@ -63,7 +69,6 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
   # nf = length(fnames)
   # # Overwrite AND name those cells
   # for(i in 1:nf){ f[[fnames[i] ]] <- .filters[[ fnames[i] ]]  }
-
 
   # Get these variables at EACH LEVEL OF AGGREAGTION NEEDED
   dall = query(

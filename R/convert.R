@@ -9,7 +9,6 @@
 #' @importFrom dplyr `%>%` tibble
 #' @importFrom stringr str_detect
 #' @importFrom stats rnorm sd quantile
-#' @importFrom base parse eval
 
 convert = function(y, se, backtrans, df, ci = 0.95){
   # Execute the backtransformation on the original single estimate
