@@ -4,6 +4,7 @@
 
 # Load moveslite working edition
 devtools::load_all(".")
+source("z/app_functions.R")
 
 # Suppose these testing inputs
 

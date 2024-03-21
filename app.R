@@ -9,6 +9,7 @@ global = function(){
   library(plotly)
   library(ggplot2)
   devtools::load_all(".")
+  source("z/app_functions.R")
   # Update choices...
   bytypes = tribble(
     ~id, ~name,
