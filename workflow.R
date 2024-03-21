@@ -21,7 +21,7 @@ source("R/project.R")    # generate predictions with project()
 
 #' Here's an example of their usage.
 # Connect to the 'data' database (tenatively your z/db.sqlite file)
-db = connect("data")
+db = connect("granddata")
 
 db %>% dbListTables() # list of county code
 # https://www2.census.gov/programs-surveys/decennial/2010/partners/pdf/FIPS_StateCounty_Code.pdf
@@ -83,7 +83,7 @@ dat %>%
 # Here's the type of data we want, named for your convenience
 .pollutant = c("CO2e" = 98)
 .by = c("Sourcetype" = 8)
-.sourcetype = c("PublicTransit" = 42) # sourcetype = 42 = public transit, this information can be found in MOVES cheatsheet
+.sourcetype = c("Public Transit" = 42) # sourcetype = 42 = public transit, this information can be found in MOVES cheatsheet
 
 # Make filters and list variables
 .filters = c(.pollutant = unname(.pollutant), .by = unname(.by) , .sourcetype = unname(.sourcetype))

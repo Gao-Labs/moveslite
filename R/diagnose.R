@@ -11,7 +11,6 @@
 #' @importFrom purrr possibly
 #' @importFrom stats lm
 #' @importFrom broom glance
-#' @importFrom base as.character
 #' @export
 
 diagnose <- function(.data, .formula, .pollutant, .by, .geoid) {
@@ -25,7 +24,7 @@ diagnose <- function(.data, .formula, .pollutant, .by, .geoid) {
       # Extract GOF stats
       broom::glance() %>%
       # Label by formula
-      dplyr::mutate(formula = paste0(base::as.character(.formula)[2], "~", base::as.character(.formula)[3])) %>%
+      dplyr::mutate(formula = paste0(as.character(.formula)[2], "~", as.character(.formula)[3])) %>%
       # Label by geoid, pollutant, and by
       dplyr::mutate(geoid = .geoid, pollutant = .pollutant, by = .by) %>%
       # Grab these diagnostics and columns
@@ -37,7 +36,7 @@ diagnose <- function(.data, .formula, .pollutant, .by, .geoid) {
     # Try making a model with that formula
     .f = ~diagnose_it(.data = .data, .formula = .formula, .pollutant = .pollutant, .by = .by, .geoid = .geoid),
     # Output an empty tibble if it doesn't work.
-    otherwise = dplyr::tibble(adjr = NA, sigma = NA, df.residual = NA, formula = base::as.character(.formula)[3]))
+    otherwise = dplyr::tibble(adjr = NA, sigma = NA, df.residual = NA, formula = as.character(.formula)[3]))
 
   # Implement the error-proof function
   result = try_diagnostic(.data = .data, .formula = .formula, .pollutant = .pollutant, .by = .by, .geoid = .geoid)

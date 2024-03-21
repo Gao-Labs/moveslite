@@ -13,7 +13,6 @@
 #' @note .roadtype ID of Roadtype
 #' @note .fueltype ID of Fueltype
 #' @importFrom dplyr `%>%` tribble mutate filter left_join select any_of
-#' @importFrom base as.character
 #' @export
 
 query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .by = 17), .vars = c("vmt", "vehicles", "sourcehours", "starts")){
@@ -28,12 +27,19 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
   # .table = "d36109"
   # .vars = c("vmt", "vehicles", "sourcehours", "starts")
 
+  # Testing values
+  # .filters = list(.pollutant = 98, .by = 8, .sourcetype = 41)
+  # .db = connect("granddata")
+  # .vars = c("vmt", "vehicles", "sourcehours", "starts")
+  # .table = "d36109"
+
   # Record original by submission
   .by = .filters$.by
 
+
   if(.by <= 16){ bycombos = .by }else{
     bycombos = switch(
-      EXPR = base::as.character(.by),
+      EXPR = as.character(.by),
       "17" = c(16, 8),
       "18" = c(16, 12),
       "19" = c(16, 14),
@@ -64,7 +70,6 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
   # # Overwrite AND name those cells
   # for(i in 1:nf){ f[[fnames[i] ]] <- .filters[[ fnames[i] ]]  }
 
-
   # Get these variables at EACH LEVEL OF AGGREAGTION NEEDED
   dall = query(
     .db = .db, .table = .table,
@@ -89,7 +94,7 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
         # Get the aggregate/relabeled data
         dextra = dall %>% query_aggregate(.by = i)
 
-        # Join them dogether
+        # Join them together
         doverall = doverall %>% dplyr::left_join(by = c("year", "geoid"), y = dextra)
 
       }
@@ -101,6 +106,7 @@ query_many = function(.db, .table = "d36109", .filters = list(.pollutant = 98, .
   # Otherwise, if by <= 16,
   }else{ result = dall %>% dplyr::select(dplyr::any_of(c("geoid", "year", "emissions", .vars)))  }
 
+  result = result %>% ungroup()
 
   # Return the result
   return(result)

@@ -9,11 +9,10 @@
 #' @importFrom dplyr `%>%` tibble
 #' @importFrom stringr str_detect
 #' @importFrom stats rnorm sd quantile
-#' @importFrom base parse eval
 
 convert = function(y, se, backtrans, df, ci = 0.95){
   # Execute the backtransformation on the original single estimate
-  y_backtransformed = backtrans %>% base::parse(text = .) %>% base::eval()
+  y_backtransformed = backtrans %>% parse(text = .) %>% eval()
 
   # Get 1000 simulated values
   # normally distributed around the original prediction y,
@@ -27,7 +26,7 @@ convert = function(y, se, backtrans, df, ci = 0.95){
   y = y + rt(n = 1000, df = df) * se
 
   # Now compute the backtransformation on the vector, producing ydist, in original units
-  y_dist_backtransformed = backtrans %>% base::parse(text = .) %>% base::eval()
+  y_dist_backtransformed = backtrans %>% parse(text = .) %>% eval()
 
   # Calculate alpha level (eg. for 95% CI, alpha = 0.05)
   alpha = 1 - ci

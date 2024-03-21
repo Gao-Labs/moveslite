@@ -7,7 +7,6 @@
 #' @param .exclude vector of variable names to exclude from data.frame - eg. id variables
 #' @description Function to create a data.frame of `newdata` to pass to a model, filling in the rest with default `data`.
 #' @importFrom dplyr `%>%` filter mutate across if_any if_all any_of all_of
-#' @importFrom base is.vector as.list is.list names min
 #' @importFrom stats approxfun
 
 setx = function(data, .newx, .cats = "year", .exclude = c("geoid"), .context = TRUE){
@@ -21,21 +20,21 @@ setx = function(data, .newx, .cats = "year", .exclude = c("geoid"), .context = T
   .outcome = "emissions"
 
   # If it's a vector, convert it to a list
-  if(base::is.vector(.newx)){ .newx = base::as.list(.newx)}
+  if(is.vector(.newx)){ .newx = as.list(.newx)}
   # If it's a list object, convert it to a data.frame
-  if(base::is.list(.newx)){ .newx = dplyr::as_tibble(.newx)  }
+  if(is.list(.newx)){ .newx = dplyr::as_tibble(.newx)  }
 
   # Exclude any unneeded variables
   d = data %>% dplyr::select(-dplyr::any_of(.exclude))
 
   # Get variables included in your data query (other than .geoid)
-  .vars = base::names(d)
+  .vars = names(d)
 
   # Get any categorical variables, in this case, year
   # eg. .cats = "year"
 
   # Get numeric xvars your data.frame supplied
-  .xvars = .newx %>% base::names() %>% .[!. %in% c(.cats, .outcome) ]
+  .xvars = .newx %>% names() %>% .[!. %in% c(.cats, .outcome) ]
 
   # Get xvars your data.frame did NOT supply
   .otherxvars = .vars[!.vars %in% c(.xvars, .cats, .outcome) ]
@@ -81,7 +80,7 @@ setx = function(data, .newx, .cats = "year", .exclude = c("geoid"), .context = T
   # If you want the full range of default information available, add it in to the output
   if(.context == TRUE){
     # Filter MOVES estimated data to only years that are not in custom year AND that are less than the min custom year
-    past = d %>% dplyr::filter(!year %in% custom$year & year < base::min(custom$year) )
+    past = d %>% dplyr::filter(!year %in% custom$year & year < min(custom$year) )
     # Filter MOVES estimated data to just all future years AFTER The minimum custom year and NOT in the default year data
     future = d %>% dplyr::filter(year >= min(custom$year), !year %in% default$year )
 

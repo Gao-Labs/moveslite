@@ -5,24 +5,23 @@
 #' @param .type (character) "data" = Cat-formatted MOVES grand data database
 #' @importFrom DBI dbConnect dbDisconnect
 #' @importFrom RMySQL MySQL
-#' @importFrom base Sys.getenv as.integer
 #' @export
 
-connect = function(.type = "data"){
+connect = function(.type = "granddata"){
   #require(DBI)
   #require(RSQLite)
 
   switch(
     EXPR = .type,
 
-    "data" = {
+    "granddata" = {
       # On Tim's computer:
       conn = DBI::dbConnect(
         drv = RMySQL::MySQL(),
-        username = base::Sys.getenv("CATSERVER_USERNAME"),
-        password = base::Sys.getenv("CATSERVER_PASSWORD"),
-        host = base::Sys.getenv("CATSERVER_HOST"),
-        port = base::as.integer(base::Sys.getenv("CATSERVER_PORT")),
+        username = Sys.getenv("CATSERVER_USERNAME"),
+        password = Sys.getenv("CATSERVER_PASSWORD"),
+        host = Sys.getenv("CATSERVER_HOST"),
+        port = as.integer(Sys.getenv("CATSERVER_PORT")),
         dbname = "granddata")
       # On Tim's computer:
       # path = "C:/Users/tmf77/OneDrive - Cornell University/Documents/rstudio/cat_static/db/data.sqlite"
@@ -39,12 +38,25 @@ connect = function(.type = "data"){
       # On Tim's computer:
       conn = DBI::dbConnect(
         drv = RMySQL::MySQL(),
-        username = base::Sys.getenv("CATSERVER_USERNAME"),
-        password = base::Sys.getenv("CATSERVER_PASSWORD"),
-        host = base::Sys.getenv("CATSERVER_HOST"),
-        port = base::as.integer(base::Sys.getenv("CATSERVER_PORT")),
+        username = Sys.getenv("CATSERVER_USERNAME"),
+        password = Sys.getenv("CATSERVER_PASSWORD"),
+        host = Sys.getenv("CATSERVER_HOST"),
+        port = as.integer(Sys.getenv("CATSERVER_PORT")),
         dbname = "cov")
+    },
+
+    "orderdata" = {
+
+      conn = DBI::dbConnect(
+        drv = RMySQL::MySQL(),
+        username = Sys.getenv("CATSERVER_ORDERDATA_USERNAME"),
+        password = Sys.getenv("CATSERVER_ORDERDATA_PASSWORD"),
+        host = Sys.getenv("CATSERVER_HOST"),
+        port = as.integer(Sys.getenv("CATSERVER_PORT")),
+        dbname = "orderdata"
+      )
     }
+
   )
   return(conn)
 }
