@@ -28,6 +28,10 @@ unloadNamespace(ns = "moveslite"); rm(list = ls()); remove.packages("moveslite")
 # Install package from source
 install.packages("~/rstudio/moveslite/moveslite_0.1.0.tar.gz", type = "source")
 
+# Copy to cat dashboard
+file.copy(from = "~/rstudio/moveslite/moveslite_0.1.0.tar.gz",
+          to = "~/rstudio/cat_dashboard/visualizer/z/moveslite_0.1.0.tar.gz",
+          overwrite = TRUE)
 # Restart R
 .rs.restartR() # Only works in RStudio
 
