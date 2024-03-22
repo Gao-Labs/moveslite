@@ -7,7 +7,6 @@
 #' @importFrom DBI dbListTables
 #' @importFrom dplyr `%>%`
 #' @export
-
 table_exists = function(.db, .table = "d36109"){
   # Get tables from database
   tables = db %>% DBI::dbListTables()

@@ -2,14 +2,17 @@
 #' @title find_transformation
 #' @author Tim Fraser & Yan Guo
 #' @description Function to find the transformation used on the model outcome, if any.
+#'
 #' @param m model object
+#'
 #' @importFrom dplyr case_when
 #' @importFrom stringr str_detect
-
+#'
+#' @export
 find_transformation = function(m){
 
   # Load transformation data
-  load("data/transformations.rda")
+  #data("transformations", envir=environment())
 
   # Get first part of model formula (before ~)
   outcome = names(m$model)[1]
