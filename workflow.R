@@ -10,11 +10,18 @@ library(DBI)
 library(RMySQL)
 
 #' These are the 5 core functions in `moveslite`.
-source("R/connect.R")    # connect() to a database
-source("R/query.R")      # query() that database in a specific way
-source("R/setx.R")       # setx() - create newdata from default data to feed to predict()
-source("R/estimate.R")   # estimate() a model of the default data
-source("R/project.R")    # generate predictions with project()
+# source("R/connect.R")    # connect() to a database
+# source("R/query.R")      # query() that database in a specific way
+# source("R/setx.R")       # setx() - create newdata from default data to feed to predict()
+# source("R/estimate.R")   # estimate() a model of the default data
+# source("R/project.R")    # generate predictions with project()
+
+# Let's load this package as a development version...
+# devtools::load_all()
+
+# Let's install it from source!
+# Install package from source
+install.packages("moveslite_0.1.0.tar.gz", type = "source")
 
 # MOVES cheatsheet, can find information about sourcetype, roadtype, fueltype or emissiontype
 # https://github.com/USEPA/EPA_MOVES_Model/blob/master/docs/MOVES4CheatsheetOnroad.pdf
