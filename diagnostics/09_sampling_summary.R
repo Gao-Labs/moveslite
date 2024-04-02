@@ -1,13 +1,13 @@
+# Initially, we did this validation exercise for a huge number of counties and pollutants and models,
+# but we have since limited our scope to contain the size and feasibility of the exercise.
+
+# Here are the finalized samples and runs.
 
 # County-pollutant-subsets sampled
 read_rds("diagnostics/runs_sample_final.rds") %>% count()
 # Census divisions sampled
 divs$division %>% unique()
 
-# Initially, we did this validation exercise for a huge number of counties and pollutants and models,
-# but we have since limited our scope to contain the size and feasibility of the exercise.
-
-# Here are the finalized samples and runs.
 
 #
 # Unique geoid sampled

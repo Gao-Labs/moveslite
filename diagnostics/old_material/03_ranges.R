@@ -3,6 +3,12 @@
 #' @description Overall ridgeline plots!
 #'
 
+library(dplyr)
+library(DBI)
+library(RSQLite)
+library(ggplot2)
+library(tidyr)
+library(readr)
 db = dbConnect(RSQLite::SQLite(), "diagnostics/diagnostics.sqlite")
 
 # Get median for each set
