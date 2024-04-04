@@ -4,10 +4,16 @@
 \alias{estimate}
 \title{Estimate your area-specific model}
 \usage{
-estimate(data, .vars = c("vmt", "vehicles", "starts", "sourcehours", "year"))
+estimate(
+  data,
+  .vars = c("vmt", "vehicles", "starts", "sourcehours", "year"),
+  .best = TRUE
+)
 }
 \arguments{
 \item{.vars}{(character vector) Vector of variables to use as predictors.}
+
+\item{.best}{(logical) `TRUE` or `FALSE` - if TRUE, always tries to make the 'best' fitting model from moveslite paper.}
 
 \item{.filters}{(vector/list) Named Vector or List of inputted values for filtering.}
 }

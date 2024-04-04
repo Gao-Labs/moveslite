@@ -1,13 +1,18 @@
 #' @name tabler
+#' @title TABLER
 #' @author Tim and Yan
-#' @importFrom dplyr mutate select filter tbl collect bind_rows arrange desc sym
+#' @description
+#' Generate a diagnostic table
+#' @param .geoid ...
+#' @param .pollutant ...
+#' @param .by ...
+#' @param .type ...
+#'
+#' @importFrom dplyr `%>%` mutate select filter tbl collect bind_rows arrange desc sym
 #' @importFrom broom glance
-#' @importFrom tidyr function
 #' @importFrom purrr map map_dfr
 #' @importFrom DBI dbDisconnect dbConnect
 #' @export
-#'
-
 tabler = function(.geoid = "36109", .pollutant = 98, .by = 8, .type = 42){
   #library(dplyr)
   #library(readr)
@@ -18,8 +23,8 @@ tabler = function(.geoid = "36109", .pollutant = 98, .by = 8, .type = 42){
   # For any formula, evaluate it.
   diagnostic = function(.data, .formula){
 
-    library(dplyr)
-    library(broom)
+    #library(dplyr)
+    #library(broom)
 
     model = lm(formula = .formula, data = .data)
     output = model %>%
