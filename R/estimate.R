@@ -14,7 +14,7 @@
 estimate = function(data, .vars = c("vmt", "vehicles", "starts", "sourcehours", "year"), .best = TRUE){
 
   # -- Do a few versions of this model to account for different numbers of .vars
-  if(best == FALSE){
+  if(.best == FALSE){
     # Make a vector to contain formula terms
     f = c()
     if("vmt" %in% .vars){ f = c(f, "poly(log(vmt),3)") }
@@ -51,7 +51,7 @@ estimate = function(data, .vars = c("vmt", "vehicles", "starts", "sourcehours", 
     outcome = "log(emissions)"
     fhat = f %>% paste0(collapse = " + ") %>% paste0(outcome, " ~ ", .)
 
-  }else if(best == TRUE){
+  }else if(.best == TRUE){
     # Use this best fitting model
     fhat = "log(emissions) ~ poly(log(vmt),3) + poly(year,2) + (vehicles) + (sourcehours) + starts"
   }

@@ -22,8 +22,8 @@ source("R/setx.R")
 source("R/estimate.R")
 source("R/project.R")
 
-# Connect to the 'data' database (tenatively your z/db.sqlite file)
-db = connect("data")
+# Connect to case study mini-CATSERVER example
+db = dbConnect(drv = RSQLite::SQLite(), "diagnostics/case_study.sqlite")
 
 vars = c("year", "vmt", "vehicles", "sourcehours", "starts")
 
@@ -42,20 +42,20 @@ dbDisconnect(db); remove(db)
 
 library(dplyr)
 
-
 # Let's write a function
 # that estimates realistic values for vmt vehicles statrs and sourcehours when vmt or vehicles changes.
 new = function(.year = 2020, .vmt =43647,  .vehicles = 10, .mph = 13){
-  tribble(
+  dplyr::tribble(
     ~year,  ~vmt,                ~vehicles,   ~sourcehours,       ~starts,
-
     .year,   .vmt * .vehicles,   .vehicles,   .vehicles*.vmt/.mph,  2000*.vehicles
-
   )
 }
 
 
-
+# Create 3 datasets of newdata for predictors,
+# showing hypothetical changes in activity predictors over time.
+# We'll feed these to our model to get emissions estimates.
+# Scenario 1
 d1 = bind_rows(
   new(.year = 2020, .vehicles = 10),
   new(.year = 2025, .vehicles = 15),
@@ -63,7 +63,7 @@ d1 = bind_rows(
   new(.year = 2040, .vehicles = 25),
   new(.year = 2050, .vehicles = 30)
 )
-
+# Scenario 2
 d2 = bind_rows(
   new(.year = 2020, .vehicles = 10),
   new(.year = 2025, .vehicles = 9),
@@ -71,7 +71,7 @@ d2 = bind_rows(
   new(.year = 2040, .vehicles = 7),
   new(.year = 2050, .vehicles = 6)
 )
-
+# Scenario 3
 myvmt = 43647
 d3 = bind_rows(
   new(.year = 2020, .vmt = myvmt),
@@ -81,57 +81,43 @@ d3 = bind_rows(
   new(.year = 2050, .vmt = myvmt - 4000)
 )
 
-
+# Write our formula
 formula1 = log(emissions) ~ poly(log(vmt), 3) + (vehicles) + sqrt(sourcehours) + poly(year,2) + starts
 #formula1 = log(emissions) ~ poly(log(vmt), 2) + log(vehicles) + (sourcehours) + poly(year,2))
 
 # Compute the model
 model1 = default %>% lm(formula = formula1)
-glance(model1)
+#glance(model1)
 summary(model1)
 
 # Create a data frame with the predictor variables
-data <- data.frame(emissions = 1338.3,
-                   vmt = 761098.4,
-                   vehicles = 24.5,
-                   sourcehours = 21323.0,
-                   year = 2020,
-                   starts = 46897.5)
+data <- data.frame(
+  emissions = 1338.3,
+  vmt = 761098.4,
+  vehicles = 24.5,
+  sourcehours = 21323.0,
+  year = 2020,
+  starts = 46897.5)
 
-# Create a sequence of vmt values
+# Create a sequence of vmt values,
+# spanning the range of the original training data, called 'default'
+span = default %>%
+  summarize(
+    from = min(vmt),
+    to = max(vmt),
+    n = round(- (min(vmt) - max(vmt)) / 100, 0)
+  )
 
-vmt_seq <- seq(min(default$vmt), max(default$vmt),
-               length.out = round(-(min(default$vmt) - max(default$vmt))/100,0))
+data1 = span %>%
+  # Vary vmt
+  reframe(vmt = seq(from = from, to = to, length.out = n)) %>%
+  # Bind in the constant values
+  bind_cols(data %>% select(-vmt) ) %>%
+  # Calculate predicted emissions using the model
+  mutate(predicted_emissions = exp(predict(model1, newdata = .)) )
 
-data1 <- data.frame(vmt = vmt_seq,
-                   vehicles = data$vehicles,
-                   sourcehours = data$sourcehours,
-                   year = 2020,
-                   starts = data$starts)
+marker_data1 <- data.frame(vmt = 761098.4, emissions = 1338.3)
 
-
-
-# Calculate predicted emissions using the model
-data1$predicted_emissions <- exp(predict(model1, newdata = data1))
-marker_data1 <- data.frame(vmt = 761098.4,
-                          emissions = 1338.3)
-
-#
-# dat = tibble(
-#   year = 2020:2030,
-#   vmt = data$vmt,
-#   vehicles = data$vehicles,
-#   starts = data$starts,
-#   sourcehours = data$sourcehours
-# ) %>%
-#   mutate(vmt = vmt + 100000 * 0:10,
-#          vehicles = vmt / 10000,
-#          starts = vmt / 20,
-#          sourcehours = vmt / 50)
-#
-#
-# dat %>% predict(model1, newdata = .) %>% exp()
-#
 
 ggplot(data1, aes(x = vmt, y = predicted_emissions)) +
   geom_line() +

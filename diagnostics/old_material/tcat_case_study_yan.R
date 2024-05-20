@@ -23,7 +23,7 @@ trip_info_2020 <- trip_info_2020 %>%
 route_info <- trip_info_2020 %>%
   group_by(Day, Route) %>%
   summarize(total_hours = mean(total_hours),
-          total_miles = mean(total_miles))
+            total_miles = mean(total_miles))
 
 # calculate the information of each day
 days <- c("Wkdy", "Sun", "Sat")
@@ -64,6 +64,7 @@ source("R/estimate.R")
 source("R/project.R")
 
 #' Here's an example of their usage.
+devtools::load_all(".")
 
 # Connect to the 'data' database (tenatively your z/db.sqlite file)
 db = connect("data")
@@ -110,11 +111,50 @@ model %>% glance()
 
 # as vmt increase by 500000, how does the emission changes
 # for prediction of other others, just change the number in the project function
-output = project(
-  .newx = list(year = 2020, vmt = 1,527484, vehicle = 45, sourcehours = 100866.5, starts = 58500),
-  m = model, data = default, .cats = "year", .exclude = "geoid", .context = FALSE)
+output = project(m = model, data = default,
+        .newx = tibble(year = 2020, vmt = 1527484, vehicles = 45, sourcehours = 100866.5, starts = 58500),
+        .context = FALSE, .exclude = "geoid", .cats= "year")
 
-output
+
+# Source
+
+
+tribble(
+  ~value,   ~units,           ~name,                                            ~source,
+  "43,647", "miles per year", "average annual mileage for public transit buses", "DOT 2019" ,
+  "20",     "vehicles",       "average buses per county",                        "Assumption",
+  "13",     "miles per hour",  "average speed of public buses in metro areas",   "NYC DOT 2018",
+  "3,357", "hours per vehicle", "average rate of sourcehours per vehicle",      "Derived",
+  "3~4 (3.5)",   "routes",            "average bus routes completed per day",         "Assumption",
+  "1,300",    "starts per vehicle per year", "average starts per bus per year",          "Derived",
+  # Empirical
+  "45",      "vehicles",      "TCAT Buses in Tompkins County",                    "TCAT 2020",
+  "1,527,484", "vehicle miles traveled", "2020 empirical vehicle miles traveled",           "Derived",
+  "100,866.5",  "hours",        "2020 empirical sourcehours",                      "Derived"
+)
+
+# Estimating Emissions for a Policy Decreasing Vehicle Miles Traveled
+bind_rows(
+  tibble(year = 2020, vmt = 1527484, vehicles = 45, sourcehours = 100866.5, starts = 58500),
+  tibble(year = 2020, vmt = 1527484 - 50000, vehicles = 45, sourcehours = 100866.5, starts = 58500)
+) %>%
+  project(m = model, data = default, .newx = ., .context = FALSE, .exclude = "geoid", .cats= "year") %>%
+  filter(type == "custom")
+
+# 2,898.76 tons to 2,329.62
+
+# Estimating Emissions for a Policy Increasing Vehicle Availability
+bind_rows(
+  tibble(year = 2020, vmt = 1527484, vehicles = 45, sourcehours = 100866.5, starts = 58500),
+  tibble(year = 2020, vmt = 1527484 + 50000, vehicles = 45, sourcehours = 100866.5, starts = 58500)
+) %>%
+  project(m = model, data = default, .newx = ., .context = FALSE, .exclude = "geoid", .cats= "year") %>%
+  filter(type == "custom")
+
+
+# 43647
+# 20
+# 13 miles
 
 
 
