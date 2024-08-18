@@ -17,25 +17,14 @@ Our team at Gao Labs is currently developing a front-end user interface that any
 
 ### Using `moveslite` in your research
 
-To use MOVESLite as an external user, you will need `CATSERVER` credentials to access the Cornell CATSERVER that MOVESLite queries. Since these credentials are sensitive, CATSERVER access is currently limited to research and development personnel. If you would like to be one of our user testing partners for `moveslite`, reach out to Dr. Tim Fraser at Gao Labs @ Cornell at <tmf77@cornell.edu>.
+To use MOVESLite as an external user, you can use the CAT Public API, which is queried in our `query()` function.
 
+Further, if you would like to be one of our user testing partners for `moveslite`, reach out to Dr. Tim Fraser at Gao Labs @ Cornell at <tmf77@cornell.edu>.
 
 ## Setup for `moveslite`
 
 To use `moveslite`, you will need an active `RStudio` coding environment. You can build the package from source using our `dev.R` script in this repository, or you can install the most recent version of the package from github using our `workflow.R` script, which contains helpful examples of how to use it.
 
-### Configuring `CATSERVER` credentials
-
-These credentials are environmental variables, which should be saved in a `.Renviron` file in your main directory. 
-
-Your `.Renviron` file might look like this:
-
-```
-CATSERVER_USERNAME="someusernamehere"
-CATSERVER_PASSWORD="somepasswordhere"
-CATSERVER_HOST="someurl.cornell.edu"
-CATSERVER_PORT=anumberhere
-```
 
 
 

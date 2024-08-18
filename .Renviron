@@ -1,4 +1,0 @@
-CATSERVER_USERNAME="dashboard"
-CATSERVER_PASSWORD="swordfish buys boba tea at walmart"
-CATSERVER_HOST="en-ce-catserver.cee.cornell.edu"
-CATSERVER_PORT=3306
