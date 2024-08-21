@@ -22,7 +22,7 @@ warnings()
 # unloadNamespace(ns = "moveslite"); rm(list = ls()); remove.packages("moveslite")
 
 # Build the package!
-devtools::build(path = getwd(), vignettes = FALSE)
+devtools::build(path = "moveslite_2.0.1.tar.gz", vignettes = FALSE)
 
 # Unload it if present
 unloadNamespace(ns = "moveslite"); rm(list = ls()); remove.packages("moveslite")
@@ -31,9 +31,9 @@ unloadNamespace(ns = "moveslite"); rm(list = ls()); remove.packages("moveslite")
 # install.packages("~/rstudio/moveslite/moveslite_0.1.0.tar.gz", type = "source")
 
 # # Copy to cat dashboard
-# file.copy(from = "~/rstudio/moveslite/moveslite_0.1.0.tar.gz",
-#           to = "~/rstudio/cat_dashboard/visualizer/z/moveslite_0.1.0.tar.gz",
-#           overwrite = TRUE)
+file.copy(from = "~/rstudio/moveslite/moveslite_2.0.1.tar.gz",
+          to = "~/rstudio/cat_dashboard/calculator/moveslite_2.0.1.tar.gz",
+          overwrite = TRUE)
 # Restart R
 # .rs.restartR() # Only works in RStudio
 

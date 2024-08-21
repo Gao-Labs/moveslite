@@ -40,6 +40,7 @@ check_status = function(){
 #* @param roadtype EPA roadtype ID.
 #' @importFrom httr GET add_headers
 #' @importFrom readr read_csv
+#' @export
 query = function(geoid = "36109",
                   pollutant = 98,
                   aggregation = 16,
@@ -144,8 +145,8 @@ get_default = function(.scenario = "granddata.d36109", .pollutant = 98, .by = "8
 
   # Query CATSERVER via API
   output = query(geoid = .geoid, pollutant = .filters$.pollutant, aggregation = .filters$.by,
-         sourcetype = .filters$.sourcetype, fueltype = .filters$fueltype,
-         regclass = .filters$regclass, roadtype = .filters$roadtype)
+         sourcetype = .filters$.sourcetype, fueltype = .filters$.fueltype,
+         regclass = .filters$.regclass, roadtype = .filters$.roadtype)
 
   output = output %>%
     select(-any_of("geoid"))

@@ -6,11 +6,8 @@
 
 library(dplyr)
 library(broom)
-library(DBI)
-library(RMySQL)
 
-#' These are the 5 core functions in `moveslite`.
-# source("R/connect.R")    # connect() to a database
+#' These are the core functions in `moveslite`.
 # source("R/query.R")      # query() that database in a specific way
 # source("R/setx.R")       # setx() - create newdata from default data to feed to predict()
 # source("R/estimate.R")   # estimate() a model of the default data
@@ -21,16 +18,14 @@ library(RMySQL)
 
 # Let's install it from source!
 # Install package from source
-install.packages("moveslite_0.1.0.tar.gz", type = "source")
+install.packages("moveslite_2.0.1.tar.gz", type = "source")
 
 # MOVES cheatsheet, can find information about sourcetype, roadtype, fueltype or emissiontype
 # https://github.com/USEPA/EPA_MOVES_Model/blob/master/docs/MOVES4CheatsheetOnroad.pdf
+library(moveslite)
 
 #' Here's an example of their usage.
-# Connect to the 'data' database (tenatively your z/db.sqlite file)
-db = connect("granddata")
 
-db %>% dbListTables() # list of county code
 # https://www2.census.gov/programs-surveys/decennial/2010/partners/pdf/FIPS_StateCounty_Code.pdf
 # full list can be found in the link
 
@@ -42,45 +37,21 @@ db %>% dbListTables() # list of county code
 # by = 15 = Roadtype
 
 # with by = sourcetype, and pollutant = carbon dioxide, and county = Tompkin, NY
-d = db %>%
-  tbl("d36109") %>%
-  filter(by == 8, pollutant == 98) %>%
-  select(year, geoid, emissions, vehicles) %>%
-  collect()
 
-# number of observations
-db %>%
-  tbl("d36109") %>%
-  count()
+# Check status of API - good way to warm it up
+check_status()
 
-# by
-db %>%
-  tbl("d36109") %>%
-  select(by) %>%
-  distinct()
+# Let's try a few test queries
 
-# by = rouadtype, and filter out roadtype = 2, and count the number of observation
-db %>%
-  tbl("d36109") %>%
-  filter(by == 15 & pollutant == 98) %>%
-  filter(roadtype == 2) %>%
-  count()
+# CO2 equivalent emissions overall for geoid 36109
+query(geoid = "36109", pollutant = 98, aggregation = 16, var = c("vmt", "vehicles"))
 
-# get a glimpse of the data
-db %>%
-  tbl("d36109") %>%
-  filter(pollutant == 98 & by == 8 & sourcetype == 41) %>%
-  glimpse()
+# CO2 equivalent emissions by sourcetype
+query(geoid = "36109", pollutant = 98, aggregation = 8, var = c("vmt", "vehicles"))
 
-# put the data into dataframe format
-dat = db %>%
-  tbl("d36109") %>%
-  filter(pollutant == 98 & by == 8 & sourcetype == 41) %>%
-  collect()
+# CO2 equivalent emissions for a specific pair of sourcetypes
+query(geoid = "36109", pollutant = 98, aggregation = 8, sourcetype = c(21, 31), var = c("vmt", "vehicles"))
 
-dat %>%
-  lm(formula = emissions ~ vmt + year + vehicles + sourcehours + starts) %>%
-  glance()
 
 
 # Here's the geoid for tompkins county, as a named vector
@@ -93,19 +64,15 @@ dat %>%
 .sourcetype = c("Public Transit" = 42) # sourcetype = 42 = public transit, this information can be found in MOVES cheatsheet
 
 # Make filters and list variables
-.filters = c(.pollutant = unname(.pollutant), .by = unname(.by) , .sourcetype = unname(.sourcetype))
-.vars = c("year", "vmt", "vehicles", "sourcehours", "starts", "sourcetype")
+.filters = list(.pollutant = unname(.pollutant), .by = unname(.by) , .sourcetype = unname(.sourcetype))
+.vars = c("year", "vmt", "vehicles", "sourcehours", "starts")
 
 # Download data (should end up with ~14 rows)
-default = query(
-  .db = db,
-  .table = .table,
-  .filters = .filters,
-  .vars = .vars)
+default = query(geoid = .geoid, pollutant = .filters$.pollutant, aggregation = .filters$.by,
+      sourcetype = .filters$.sourcetype, var = .vars)
 
-
-
-dbDisconnect(db); remove(db) #disconnect to the database
+# View it
+default
 
 # Estimate the model
 model = estimate(data = default, .vars = .vars)
@@ -127,7 +94,8 @@ qis = project(m = model, data = default, .newx = .newx, .context = FALSE)
 qis %>% filter(type %in% c("custom", "benchmark"))
 
 library(ggplot2)
-qis %>% filter(type %in% c("custom", "benchmark")) %>%
+qis %>%
+  filter(type %in% c("custom", "benchmark")) %>%
   ggplot(mapping = aes(x = year, y = emissions, color = type, group = 1)) +
   geom_point(mapping = aes(color = type)) +
   geom_line()
@@ -140,9 +108,4 @@ qis %>% filter(type %in% c("pre_benchmark", "benchmark", "post_benchmark"))  %>%
   geom_point(mapping = aes(color = type)) +
   geom_line()
 
-
-
-# Disconnect
-dbDisconnect(db); remove(db)
-
-
+rm(list = ls())
