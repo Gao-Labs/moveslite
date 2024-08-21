@@ -1,7 +1,12 @@
-# `moveslite`
+<head>
+    <link rel="shortcut icon" type="image/png" href="extra/moveslite_hexagon.png">
+</head>
+
+# `moveslite` <a href="https://github.com/gao-labs/moveslite"><img src="extra/moveslite_hexagon.png" align="right" height="200" /></a>
 
 - Authors: Tim Fraser, Yan Guo, and Oliver Gao
 - Description: repository for `moveslite` R package and validation analyses.
+
 
 ## What is `moveslite`?
 
